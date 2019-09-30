@@ -1,15 +1,13 @@
 use super::cpu::Word;
 use super::cpu::Byte;
 
-// TODO: Possibly `use` this in the module scope for external access?
-bitflags! {
-    pub struct Flags: Byte {
-        const S =  0b10000000;
-        const Z =  0b01000000;
-        const AC = 0b00100000;
-        const P =  0b00000100;
-        const C =  0b00000001;
-    }
+#[derive(Copy, Clone)]
+pub enum Flags {
+    S =  0b10000000,
+    Z =  0b01000000,
+    AC = 0b00100000,
+    P =  0b00000100,
+    C =  0b00000001,
 }
 
 #[derive(Default)]
@@ -24,7 +22,6 @@ pub struct Register {
     f: Byte,
     sp: Word,
     pc: Word,
-    flags: Byte,
 }
 
 impl Register {
@@ -62,8 +59,8 @@ impl Register {
 
     // Flag functions
 
-    pub fn get_flag(&self, flag: Flags) {
-        
+    pub fn get_flag(&self, flag: Flags) -> bool {
+        (self.f & flag as Byte) == flag as Byte
     }
 
     pub fn set_flag(&self, byte: Byte) {
@@ -112,5 +109,22 @@ mod tests {
         reg.set_hl(0xEEFF);
         assert_eq!(reg.h, 0xEE);
         assert_eq!(reg.l, 0xFF);
+    }
+
+    #[test]
+    fn test_get_flags() {
+        let mut reg = Register::new();
+
+        reg.f = Flags::C as Byte;
+        assert_eq!(reg.get_flag(Flags::C), true);
+
+        reg.f |= Flags::S as Byte;
+        assert_eq!(reg.f, 0b10000001);
+        assert_eq!(reg.get_flag(Flags::S), true);
+
+        reg.f &= !(Flags::C as Byte);
+
+        assert_eq!(reg.get_flag(Flags::C), false);
+        assert_eq!(reg.get_flag(Flags::S), true);
     }
 }
