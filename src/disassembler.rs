@@ -2,11 +2,15 @@ use crate::i8080::cpu::Byte;
 use crate::i8080::cpu::Address;
 
 pub fn disassemble_8080_op(program: &Vec<Byte>, pc: Address) -> Byte {
+
+    if pc as usize > program.len() - 1 {
+        return 0;
+    }
+
     let op_code: Byte = program[pc as usize];
     let num_bytes;
 
     print!("{:04X}  ", pc);
-    print!("{:04X}  ", op_code);
 
     match op_code {
         // 00

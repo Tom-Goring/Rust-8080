@@ -8,7 +8,7 @@ mod i8080;
 mod disassembler;
 
 fn main() {
-    let mut file = File::open("./ROMS/invaders").expect("Couldn't open file for some reason.");
+    let mut file = File::open("./ROMS/invaders.h").expect("Couldn't open file for some reason.");
     let mut data = Vec::new();
 
     file.read_to_end(&mut data).expect("Couldn't read file for some reason.");
@@ -17,7 +17,7 @@ fn main() {
 
     for byte in &data {
         pc += disassembler::disassemble_8080_op(&data, pc) as u16;
-        if pc > 30 {
+        if pc > 0x3f {
             break;
         }
     }
