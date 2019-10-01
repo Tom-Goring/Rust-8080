@@ -1,2 +1,3 @@
 mod register;
-mod cpu;
+pub mod cpu;
+

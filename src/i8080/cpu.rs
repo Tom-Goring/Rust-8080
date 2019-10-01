@@ -6,4 +6,6 @@ use super::register::Register;
 
 pub struct CPU {
     pub reg: Register,
+    pub memory: [Byte; 0xFFFF],
 }
+
