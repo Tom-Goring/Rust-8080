@@ -2,7 +2,7 @@ use super::cpu::Word;
 use super::cpu::Byte;
 
 #[derive(Copy, Clone)]
-pub enum Flags {
+pub enum Flag {
     S =  0b10000000,
     Z =  0b01000000,
     AC = 0b00100000,
@@ -59,20 +59,22 @@ impl Register {
 
     // Flag functions
 
-    pub fn get_flag(&self, flag: Flags) -> bool {
+    pub fn get_flag(&self, flag: Flag) -> bool {
         (self.f & flag as Byte) == flag as Byte
     }
 
-    pub fn set_flag(&self, byte: Byte) {
-        
+    pub fn set_flag(&mut self, flag: Flag, set: bool) {
+        if set {
+            self.f |= flag as Byte;
+        } else {
+            self.f &= !(flag as Byte);
+        }
     }
 
     pub fn new() -> Self {
         Self::default()
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -115,16 +117,37 @@ mod tests {
     fn test_get_flags() {
         let mut reg = Register::new();
 
-        reg.f = Flags::C as Byte;
-        assert_eq!(reg.get_flag(Flags::C), true);
+        reg.f = Flag::C as Byte;
+        assert_eq!(reg.get_flag(Flag::C), true);
 
-        reg.f |= Flags::S as Byte;
+        reg.f |= Flag::S as Byte;
         assert_eq!(reg.f, 0b10000001);
-        assert_eq!(reg.get_flag(Flags::S), true);
+        assert_eq!(reg.get_flag(Flag::S), true);
 
-        reg.f &= !(Flags::C as Byte);
+        reg.f &= !(Flag::C as Byte);
 
-        assert_eq!(reg.get_flag(Flags::C), false);
-        assert_eq!(reg.get_flag(Flags::S), true);
+        assert_eq!(reg.get_flag(Flag::C), false);
+        assert_eq!(reg.get_flag(Flag::S), true);
+    }
+
+    #[test]
+    fn test_set_flags() {
+        let mut reg = Register::new();
+
+        reg.set_flag(Flag::C, true);
+
+        assert_eq!(reg.f, Flag::C as Byte);
+
+        reg.set_flag(Flag::C, false);
+
+        assert_eq!(reg.f, 0b00000000);
+
+        reg.set_flag(Flag::S, true);
+
+        assert_eq!(reg.f, Flag::S as Byte);
+
+        reg.set_flag(Flag::S, false);
+
+        assert_eq!(reg.f, 0b00000000);
     }
 }
