@@ -12,16 +12,16 @@ pub enum Flag {
 
 #[derive(Default)]
 pub struct Register {
-    a: Byte,
-    b: Byte,
-    c: Byte,
-    d: Byte,
-    e: Byte,
-    h: Byte,
-    l: Byte,
+    pub a: Byte,
+    pub b: Byte,
+    pub c: Byte,
+    pub d: Byte,
+    pub e: Byte,
+    pub h: Byte,
+    pub l: Byte,
     f: Byte,
-    sp: Word,
-    pc: Word,
+    pub sp: Word,
+    pub pc: Word,
 }
 
 impl Register {
