@@ -4,22 +4,44 @@ pub type Byte = u8;
 
 use super::register::Register;
 use super::register::Flag;
+use super::memory::Memory;
 
 pub struct CPU {
     pub reg: Register,
-    pub memory: [Byte; 0xFFFF],
+    pub memory: Memory,
 }
 
 impl CPU {
+    pub fn new() -> Self {
+        CPU {
+            reg: Register::new(),
+            memory: Memory::new(),
+        }
+    }
+
     pub fn tick(&mut self) {
         let opcode = self.fetch();
         self.execute_opcode(opcode);
     }
 
     pub fn fetch(&self) -> Byte {
-        self.memory[self.reg.pc as usize]
+        self.memory[self.reg.pc]
     }
 
+    fn add(&mut self, reg: Byte) {
+        let sum: u16 = self.reg.a as u16 + reg as u16;
+        self.reg.set_flag(Flag::C, sum > 0xFF);
+
+        self.reg.a = sum as u8;
+
+        self.reg.set_flag(Flag::Z, self.reg.a == 0);
+        self.reg.set_flag(Flag::S, (self.reg.a & 0x80) != 0);
+        self.reg.set_flag(Flag::P, self.reg.a.count_ones() % 2 == 0);
+        self.reg.set_flag(Flag::AC, self.reg.a > 0xF);
+    }
+}
+
+impl CPU {
     pub fn execute_opcode(&mut self, opcode: Byte) {
         match opcode {
             // 00
@@ -183,19 +205,14 @@ impl CPU {
             0x7f => {},
 
             // 80
-            0x80 => {
-                let answer: u16 = (self.reg.a + self.reg.b).into();
-                self.reg.set_flag(Flag::Z, answer == 0);
-                self.reg.set_flag(Flag::C, answer > 0xFF);
-                self.reg.set_flag(Flag::S, (answer & 0x80) != 0); // most significant bit indicates sign
-            },
-            0x81 => {},
-            0x82 => {},
-            0x83 => {},
-            0x84 => {},
-            0x85 => {},
-            0x86 => {},
-            0x87 => {},
+            0x80 => { self.add(self.reg.b) },
+            0x81 => { self.add(self.reg.c) },
+            0x82 => { self.add(self.reg.d) },
+            0x83 => { self.add(self.reg.e) },
+            0x84 => { self.add(self.reg.h) },
+            0x85 => { self.add(self.reg.l) },
+            0x86 => { self.add(self.reg.a) },
+            0x87 => { self.add(self.memory[self.reg.get_hl()])},
 
             // 88
             0x88 => {},
@@ -347,5 +364,49 @@ impl CPU {
             0xff => {},
             0xfe => {},
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_add() {
+        let mut cpu = CPU::new();
+
+        cpu.reg.a = 0x1;
+        cpu.reg.b = 0x1;
+
+        assert_eq!(cpu.reg.a, 1);
+        assert_eq!(cpu.reg.b, 1);
+
+        cpu.memory[0] = 0x80;
+
+        assert_eq!(cpu.memory[0], 0x80);
+
+        cpu.execute_opcode(cpu.fetch());
+
+        assert_eq!(cpu.reg.a, 2);
+
+        assert_eq!(cpu.reg.get_flag(Flag::Z), false);
+        assert_eq!(cpu.reg.get_flag(Flag::S), false);
+        assert_eq!(cpu.reg.get_flag(Flag::P), false);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
+        assert_eq!(cpu.reg.get_flag(Flag::AC), false);
+
+        cpu.reg.a = 0xFF;
+        cpu.reg.b = 0xFF;
+
+        assert_eq!(cpu.reg.a, 0xFF);
+        assert_eq!(cpu.reg.b, 0xFF);
+
+        cpu.execute_opcode(cpu.fetch());
+        
+        assert_eq!(cpu.reg.get_flag(Flag::Z), false);
+        assert_eq!(cpu.reg.get_flag(Flag::S), true);
+        assert_eq!(cpu.reg.get_flag(Flag::P), false);
+        assert_eq!(cpu.reg.get_flag(Flag::C), true);
+        assert_eq!(cpu.reg.get_flag(Flag::AC), true);
     }
 }

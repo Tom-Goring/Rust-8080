@@ -1,13 +1,10 @@
 use crate::i8080::cpu::Byte;
 use crate::i8080::cpu::Address;
+use crate::i8080::memory::Memory;
 
-pub fn disassemble_8080_op(program: &Vec<Byte>, pc: Address) -> Byte {
+pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
 
-    if pc as usize > program.len() - 1 {
-        return 0;
-    }
-
-    let op_code: Byte = program[pc as usize];
+    let op_code: Byte = program[pc];
     let num_bytes;
 
     print!("{:04X}  ", pc);
@@ -15,12 +12,12 @@ pub fn disassemble_8080_op(program: &Vec<Byte>, pc: Address) -> Byte {
     match op_code {
         // 00
         0x00 => { println!("NOP"); num_bytes = 1 },
-        0x01 => { println!("LXI B, ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0x01 => { println!("LXI B, ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x02 => { println!("STAX B"); num_bytes = 1 },
         0x03 => { println!("INX B"); num_bytes = 1 },
         0x04 => { println!("INR B"); num_bytes = 1 },
         0x05 => { println!("DCR B"); num_bytes = 1 },
-        0x06 => { println!("MVI B, #${:02X}", program[(pc + 1) as usize]); num_bytes = 2; },
+        0x06 => { println!("MVI B, #${:02X}", program[(pc + 1)]); num_bytes = 2; },
         0x07 => { println!("RLC"); num_bytes = 1 },
 
         // 08
@@ -30,17 +27,17 @@ pub fn disassemble_8080_op(program: &Vec<Byte>, pc: Address) -> Byte {
         0x0b => { println!("DCX B"); num_bytes = 1 },
         0x0c => { println!("INR C"); num_bytes = 1 },
         0x0d => { println!("DCR C"); num_bytes = 1 },
-        0x0e => { println!("MVI C, #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0x0e => { println!("MVI C, #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0x0f => { println!("RRC"); num_bytes = 1 },
 
         // 10
         0x10 => { println!("NOP"); num_bytes = 1 },
-        0x11 => { println!("LXI D, ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0x11 => { println!("LXI D, ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x12 => { println!("STAX D"); num_bytes = 1 },
         0x13 => { println!("INX D"); num_bytes = 1 },
         0x14 => { println!("INR D"); num_bytes = 1 },
         0x15 => { println!("DCR D"); num_bytes = 1 },
-        0x16 => { println!("MVI D #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0x16 => { println!("MVI D #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0x17 => { println!("RAL"); num_bytes = 1 },
 
         // 18
@@ -50,47 +47,47 @@ pub fn disassemble_8080_op(program: &Vec<Byte>, pc: Address) -> Byte {
         0x1b => { println!("DCX D"); num_bytes = 1 },
         0x1c => { println!("INR E"); num_bytes = 1 },
         0x1d => { println!("DCR E"); num_bytes = 1 },
-        0x1e => { println!("MVI E #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0x1e => { println!("MVI E #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0x1f => { println!("RAR"); num_bytes = 1 },
 
         // 20
         0x20 => { println!("NOP"); num_bytes = 1 },
-        0x21 => { println!("LXI H, ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0x22 => { println!("SHLD ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0x21 => { println!("LXI H, ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0x22 => { println!("SHLD ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x23 => { println!("INX H"); num_bytes = 1 },
         0x24 => { println!("INR H"); num_bytes = 1 },
         0x25 => { println!("DCR H"); num_bytes = 1 },
-        0x26 => { println!("MVI H #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0x26 => { println!("MVI H #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0x27 => { println!("DDA"); num_bytes = 1 },
 
         // 28
         0x28 => { println!("NOP"); num_bytes = 1 },
         0x29 => { println!("DAD H"); num_bytes = 1 },
-        0x2a => { println!("LHLD ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0x2a => { println!("LHLD ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x2b => { println!("DCX H"); num_bytes = 1 },
         0x2c => { println!("INR L"); num_bytes = 1 },
         0x2d => { println!("DCR L"); num_bytes = 1 },
-        0x2e => { println!("MVI L #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0x2e => { println!("MVI L #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0x2f => { println!("CMA"); num_bytes = 1 },
 
         // 30
         0x30 => { println!("NOP"); num_bytes = 1 },
-        0x31 => { println!("LXI SP, ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0x32 => { println!("STA ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0x31 => { println!("LXI SP, ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0x32 => { println!("STA ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x33 => { println!("INX SP"); num_bytes = 1 },
         0x34 => { println!("INR M"); num_bytes = 1 },
         0x35 => { println!("DCR M"); num_bytes = 1 },
-        0x36 => { println!("MVI M, #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0x36 => { println!("MVI M, #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0x37 => { println!("STC"); num_bytes = 1 },
 
         // 38
         0x38 => { println!("NOP"); num_bytes = 1 },
         0x39 => { println!("DAD SP"); num_bytes = 1 },
-        0x3a => { println!("LDA ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0x3a => { println!("LDA ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x3b => { println!("DCX SP"); num_bytes = 1 },
         0x3c => { println!("INR A"); num_bytes = 1 },
         0x3d => { println!("DCR A"); num_bytes = 1 },
-        0x3e => { println!("MVI A, #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0x3e => { println!("MVI A, #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0x3f => { println!("CMC"); num_bytes = 1 },
 
         // 40
@@ -256,82 +253,82 @@ pub fn disassemble_8080_op(program: &Vec<Byte>, pc: Address) -> Byte {
         // c0
         0xc0 => { println!("RNZ"); num_bytes = 1 },
         0xc1 => { println!("POP B"); num_bytes = 1 },
-        0xc2 => { println!("JNZ ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xc3 => { println!("JMP ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xc4 => { println!("CNZ ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0xc2 => { println!("JNZ ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xc3 => { println!("JMP ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xc4 => { println!("CNZ ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0xc5 => { println!("PUSH B"); num_bytes = 1 },
-        0xc6 => { println!("ADI #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0xc6 => { println!("ADI #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0xc7 => { println!("RST 0"); num_bytes = 1 },
 
         // c8
         0xc8 => { println!("RZ"); num_bytes = 1 },
         0xc9 => { println!("RET"); num_bytes = 1 },
-        0xca => { println!("JZ ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xcb => { println!("*JMP ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xcc => { println!("CZ ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xcd => { println!("CALL ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xce => { println!("ACI #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0xca => { println!("JZ ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xcb => { println!("*JMP ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xcc => { println!("CZ ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xcd => { println!("CALL ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xce => { println!("ACI #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0xcf => { println!("RST 1"); num_bytes = 1 },
 
         // d0
         0xd0 => { println!("RNC"); num_bytes = 1 },
         0xd1 => { println!("POP D"); num_bytes = 1 },
-        0xd2 => { println!("JNC ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xd3 => { println!("OUT #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
-        0xd4 => { println!("CNC ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0xd2 => { println!("JNC ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xd3 => { println!("OUT #${:02X}", program[(pc + 1)]); num_bytes = 2 },
+        0xd4 => { println!("CNC ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0xd5 => { println!("PUSH D"); num_bytes = 1 },
-        0xd6 => { println!("SUI #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0xd6 => { println!("SUI #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0xd7 => { println!("RST 2"); num_bytes = 1 },
 
         // d8
         0xd8 => { println!("RC"); num_bytes = 1 },
         0xd9 => { println!("*RET"); num_bytes = 1 },
-        0xda => { println!("JC ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xdb => { println!("IN #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
-        0xdc => { println!("CC ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xdd => { println!("*CALL ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xde => { println!("SBI #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0xda => { println!("JC ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xdb => { println!("IN #${:02X}", program[(pc + 1)]); num_bytes = 2 },
+        0xdc => { println!("CC ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xdd => { println!("*CALL ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xde => { println!("SBI #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0xdf => { println!("RST 3"); num_bytes = 1 },
 
         // e0
         0xe0 => { println!("RPO"); num_bytes = 1 },
         0xe1 => { println!("POP H"); num_bytes = 1 },
-        0xe2 => { println!("JPO ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0xe2 => { println!("JPO ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0xe3 => { println!("XTHL"); num_bytes = 1 },
-        0xe4 => { println!("CPO ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0xe4 => { println!("CPO ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0xe5 => { println!("PUSH H"); num_bytes = 1 },
-        0xe6 => { println!("ANI #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0xe6 => { println!("ANI #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0xe7 => { println!("RST 4"); num_bytes = 1 },
 
         // e8
         0xe8 => { println!("RPE"); num_bytes = 1 },
         0xe9 => { println!("PCHL"); num_bytes = 1 },
-        0xea => { println!("JPE ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0xea => { println!("JPE ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0xeb => { println!("XCHG"); num_bytes = 1 },
-        0xec => { println!("CPE ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xed => { println!("*CALL ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
-        0xee => { println!("XRI #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0xec => { println!("CPE ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xed => { println!("*CALL ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
+        0xee => { println!("XRI #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0xef => { println!("RST 5"); num_bytes = 1 },
 
         // f0
         0xf0 => { println!("RP"); num_bytes = 1 },
         0xf1 => { println!("POP PSW"); num_bytes = 1 },
-        0xf2 => { println!("JP ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0xf2 => { println!("JP ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0xf3 => { println!("DI"); num_bytes = 1 },
-        0xf4 => { println!("CP ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3 },
+        0xf4 => { println!("CP ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0xf5 => { println!("PUSH PSW"); num_bytes = 1 },
-        0xf6 => { println!("ORI #${:02X}", program[(pc + 1) as usize]); num_bytes = 2 },
+        0xf6 => { println!("ORI #${:02X}", program[(pc + 1)]); num_bytes = 2 },
         0xf7 => { println!("RST 6"); num_bytes = 1 },
 
         // f8
         0xf8 => {println!("RM"); num_bytes = 1; },
         0xf9 => {println!("SPHL"); num_bytes = 1; },
-        0xfa => {println!("JM ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3; },
+        0xfa => {println!("JM ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3; },
         0xfb => {println!("EI"); num_bytes = 1; },
-        0xfc => {println!("CM ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3; },
-        0xfd => {println!("*CALL ${:02X}{:02X}", program[(pc + 2) as usize], program[(pc + 1) as usize]); num_bytes = 3; },
+        0xfc => {println!("CM ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3; },
+        0xfd => {println!("*CALL ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3; },
         0xff => {println!("RST 7"); num_bytes = 1; },
-        0xfe => {println!("CPI #${:02X}", program[(pc + 1) as usize]); num_bytes = 2; },
+        0xfe => {println!("CPI #${:02X}", program[(pc + 1)]); num_bytes = 2; },
     }
 
     num_bytes
