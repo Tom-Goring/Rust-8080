@@ -65,7 +65,7 @@ impl CPU {
             // 00
             0x00 => { println!("NOP"); 1 },
             0x01 => { self.reg.set_bc(self.get_bytes_immediate()); 3 },
-            0x02 => { self.memory[self.reg.get_de()] = self.reg.a; 1 },
+            0x02 => { self.memory[self.reg.get_bc()] = self.reg.a; 1 },
             0x03 => {0},
             0x04 => {0},
             0x05 => {0},
@@ -85,7 +85,7 @@ impl CPU {
             // 10
             0x10 => {0},
             0x11 => { self.reg.set_de(self.get_bytes_immediate()); 3 },
-            0x12 => {0},
+            0x12 => { self.memory[self.reg.get_de()] = self.reg.a; 1 },
             0x13 => {0},
             0x14 => {0},
             0x15 => {0},
@@ -425,9 +425,9 @@ mod tests {
         assert_eq!(cpu.reg.a, 1);
         assert_eq!(cpu.reg.b, 1);
 
-        cpu.memory[0] = 0x80;
+        cpu.memory[cpu.reg.pc] = 0x80;
 
-        assert_eq!(cpu.memory[0], 0x80);
+        assert_eq!(cpu.memory[cpu.reg.pc], 0x80);
 
         cpu.tick();
 
@@ -445,6 +445,8 @@ mod tests {
         assert_eq!(cpu.reg.a, 0xFF);
         assert_eq!(cpu.reg.b, 0xFF);
 
+        cpu.memory[cpu.reg.pc] = 0x80;
+
         cpu.tick();
         
         assert_eq!(cpu.reg.get_flag(Flag::Z), false);
@@ -454,7 +456,7 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(Flag::AC), true);
 
         cpu.reg.a = 0x0;
-        cpu.memory[0x0] = 0x87;
+        cpu.memory[cpu.reg.pc] = 0x87;
         cpu.memory[0x1001] = 0xFF;
         cpu.reg.set_hl(0x1001);
 
@@ -488,22 +490,31 @@ mod tests {
     fn test_lxi() {
         let mut cpu = CPU::new();
 
+        cpu.memory[0] = 0x1;
         cpu.memory[1] = 0x35;
         cpu.memory[2] = 0x76;
 
-        cpu.memory[0] = 0x1;
+        cpu.memory[3] = 0x11;
+        cpu.memory[4] = 0x35;
+        cpu.memory[5] = 0x76;
+
+        cpu.memory[6] = 0x21;
+        cpu.memory[7] = 0x35;
+        cpu.memory[8] = 0x76;
+
+        cpu.memory[9] = 0x31;
+        cpu.memory[10] = 0x35;
+        cpu.memory[11] = 0x76;
+
         cpu.tick();
         assert_eq!(cpu.reg.get_bc(), 0x7635);
 
-        cpu.memory[0] = 0x11;
         cpu.tick();
         assert_eq!(cpu.reg.get_de(), 0x7635);
 
-        cpu.memory[0] = 0x21;
         cpu.tick();
         assert_eq!(cpu.reg.get_hl(), 0x7635);
 
-        cpu.memory[0] = 0x31;
         cpu.tick();
         assert_eq!(cpu.reg.sp, 0x7635);
     }
@@ -512,7 +523,20 @@ mod tests {
     fn test_stax() {
         let mut cpu = CPU::new();
 
-        cpu.memory[0] = 0x2;
+        cpu.memory[cpu.reg.pc] = 0x2;
+        cpu.reg.a = 0x42;
+        cpu.reg.set_bc(0xF00F);
 
+        cpu.tick();
+
+        assert_eq!(cpu.memory[0xF00F], 0x42);
+
+        cpu.memory[cpu.reg.pc] = 0x12;
+        cpu.reg.a = 0x82;
+        cpu.reg.set_de(0xEA3);
+
+        cpu.tick();
+
+        assert_eq!(cpu.memory[0xEA3], 0x82);
     }
 }
