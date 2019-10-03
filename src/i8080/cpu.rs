@@ -6,6 +6,8 @@ use super::register::Register;
 use super::register::Flag;
 use super::memory::Memory;
 
+use crate::disassembler::disassemble_8080_op;
+
 pub struct CPU {
     pub reg: Register,
     pub memory: Memory,
@@ -21,6 +23,7 @@ impl CPU {
 
     pub fn tick(&mut self) {
         let opcode = self.fetch();
+        disassemble_8080_op(&self.memory, self.reg.pc);
         self.reg.pc += self.execute_opcode(opcode);
     }
 
@@ -419,44 +422,79 @@ mod tests {
     fn test_add() {
         let mut cpu = CPU::new();
 
-        cpu.reg.a = 0x1;
-        cpu.reg.b = 0x1;
+        cpu.memory[0] = 0x80;
+        cpu.memory[1] = 0x81;
+        cpu.memory[2] = 0x82;
+        cpu.memory[3] = 0x83;
+        cpu.memory[4] = 0x84;
+        cpu.memory[5] = 0x85;
+        cpu.memory[6] = 0x86;
+        cpu.memory[7] = 0x87;
 
-        assert_eq!(cpu.reg.a, 1);
-        assert_eq!(cpu.reg.b, 1);
-
-        cpu.memory[cpu.reg.pc] = 0x80;
-
-        assert_eq!(cpu.memory[cpu.reg.pc], 0x80);
-
+        cpu.reg.a = 0b1;
+        cpu.reg.b = 0b1;
         cpu.tick();
-
-        assert_eq!(cpu.reg.a, 2);
-
+        assert_eq!(cpu.reg.a, 0b10);
         assert_eq!(cpu.reg.get_flag(Flag::Z), false);
         assert_eq!(cpu.reg.get_flag(Flag::S), false);
         assert_eq!(cpu.reg.get_flag(Flag::P), false);
         assert_eq!(cpu.reg.get_flag(Flag::C), false);
         assert_eq!(cpu.reg.get_flag(Flag::AC), false);
 
-        cpu.reg.a = 0xFF;
-        cpu.reg.b = 0xFF;
+        cpu.reg.c = 0x1;
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b11);
+        assert_eq!(cpu.reg.get_flag(Flag::Z), false);
+        assert_eq!(cpu.reg.get_flag(Flag::S), false);
+        assert_eq!(cpu.reg.get_flag(Flag::P), true);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
+        assert_eq!(cpu.reg.get_flag(Flag::AC), false);
 
-        assert_eq!(cpu.reg.a, 0xFF);
-        assert_eq!(cpu.reg.b, 0xFF);
+        cpu.reg.d = 0x1;
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b100);
+        assert_eq!(cpu.reg.get_flag(Flag::Z), false);
+        assert_eq!(cpu.reg.get_flag(Flag::S), false);
+        assert_eq!(cpu.reg.get_flag(Flag::P), false);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
+        assert_eq!(cpu.reg.get_flag(Flag::AC), false);
 
-        cpu.memory[cpu.reg.pc] = 0x80;
+        cpu.reg.e = 0x1;
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b101);
+        assert_eq!(cpu.reg.get_flag(Flag::Z), false);
+        assert_eq!(cpu.reg.get_flag(Flag::S), false);
+        assert_eq!(cpu.reg.get_flag(Flag::P), true);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
+        assert_eq!(cpu.reg.get_flag(Flag::AC), false);
+
+        cpu.reg.h = 0x1;
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b110);
+        assert_eq!(cpu.reg.get_flag(Flag::Z), false);
+        assert_eq!(cpu.reg.get_flag(Flag::S), false);
+        assert_eq!(cpu.reg.get_flag(Flag::P), true);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
+        assert_eq!(cpu.reg.get_flag(Flag::AC), false);
+
+        cpu.reg.l = 0x1;
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b111);
+        assert_eq!(cpu.reg.get_flag(Flag::Z), false);
+        assert_eq!(cpu.reg.get_flag(Flag::S), false);
+        assert_eq!(cpu.reg.get_flag(Flag::P), false);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
+        assert_eq!(cpu.reg.get_flag(Flag::AC), false);
 
         cpu.tick();
-        
+        assert_eq!(cpu.reg.a, 0b1110);
         assert_eq!(cpu.reg.get_flag(Flag::Z), false);
-        assert_eq!(cpu.reg.get_flag(Flag::S), true);
+        assert_eq!(cpu.reg.get_flag(Flag::S), false);
         assert_eq!(cpu.reg.get_flag(Flag::P), false);
-        assert_eq!(cpu.reg.get_flag(Flag::C), true);
-        assert_eq!(cpu.reg.get_flag(Flag::AC), true);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
+        assert_eq!(cpu.reg.get_flag(Flag::AC), false);
 
         cpu.reg.a = 0x0;
-        cpu.memory[cpu.reg.pc] = 0x87;
         cpu.memory[0x1001] = 0xFF;
         cpu.reg.set_hl(0x1001);
 
