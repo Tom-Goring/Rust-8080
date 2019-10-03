@@ -13,5 +13,13 @@ Clone the repository, and then from the repo directory run ```cargo run```
 To run the tests, run ```cargo test```
 
 ## TODO: 
+- Next up: INR, DCR, MVI
 - Possibly extend add test to encompass more scenarios
 - Complete other opcodes
+
+## Resources:
+
+I'm using a few resources for this:
+- [Emulator 101's 8080 OpCode reference](http://www.emulator101.com/reference/8080-by-opcode.html)
+- [This summary of 8080 instructions](http://textfiles.com/programming/8080.op)
+- [The 8080 Programmers Manual](https://altairclone.com/downloads/manuals/8080%20Programmers%20Manual.pdf)
