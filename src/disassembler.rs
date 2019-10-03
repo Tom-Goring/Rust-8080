@@ -333,3 +333,4 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
 
     num_bytes
 }
+
