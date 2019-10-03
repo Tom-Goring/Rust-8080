@@ -24,15 +24,35 @@ impl CPU {
         self.execute_opcode(opcode);
     }
 
-    pub fn fetch(&self) -> Byte {
+    pub fn fetch(&self) -> Byte { // TODO: Add test
         self.memory[self.reg.pc]
     }
+}
+
+impl CPU {
+
+    fn get_byte_at_address(&self, address: Address) -> Byte {
+        self.memory[address]
+    }
+
+    fn get_bytes_at_address(&self, address: Address) -> Word {
+         ((self.memory[address + 1] as Word) << 8) | self.memory[address] as Word
+    }
+
+    fn get_byte_immediate(&self) -> Byte {
+        self.get_byte_at_address(self.reg.pc + 1)
+    }
+
+    fn get_bytes_immediate(&self) -> Word {
+        self.get_bytes_at_address(self.reg.pc + 1)
+    }
+
 
     fn add(&mut self, reg: Byte) {
         let sum: u16 = self.reg.a as u16 + reg as u16;
         self.reg.set_flag(Flag::C, sum > 0xFF);
 
-        self.reg.a = sum as u8;
+        self.reg.a = sum as Byte;
 
         self.reg.set_flag(Flag::Z, self.reg.a == 0);
         self.reg.set_flag(Flag::S, (self.reg.a & 0x80) != 0);
@@ -45,7 +65,7 @@ impl CPU {
     pub fn execute_opcode(&mut self, opcode: Byte) {
         match opcode {
             // 00
-            0x00 => {},
+            0x00 => {  },
             0x01 => {},
             0x02 => {},
             0x03 => {},
@@ -212,7 +232,7 @@ impl CPU {
             0x84 => { self.add(self.reg.h) },
             0x85 => { self.add(self.reg.l) },
             0x86 => { self.add(self.reg.a) },
-            0x87 => { self.add(self.memory[self.reg.get_hl()])},
+            0x87 => { self.add(self.get_byte_at_address(self.reg.get_hl()))},
 
             // 88
             0x88 => {},
@@ -372,6 +392,32 @@ mod tests {
     use super::*;
     
     #[test]
+    fn test_memory_accessors() {
+        let mut cpu = CPU::new();
+
+        cpu.memory[0x0] = 0x34;
+        cpu.memory[0x1] = 0x11;
+        cpu.memory[0x2] = 0x24;
+        cpu.memory[0x3] = 0x31;
+        cpu.memory[0x4] = 0x47;
+
+        assert_eq!(cpu.get_byte_at_address(0x0), 0x34);
+        assert_eq!(cpu.get_byte_at_address(0x1), 0x11);
+        assert_eq!(cpu.get_byte_at_address(0x2), 0x24);
+        assert_eq!(cpu.get_byte_at_address(0x3), 0x31);
+        assert_eq!(cpu.get_byte_at_address(0x4), 0x47);
+
+        assert_eq!(cpu.get_bytes_at_address(0x0), 0x1134);
+        assert_eq!(cpu.get_bytes_at_address(0x1), 0x2411);
+
+        cpu.reg.pc = 0x0;
+        assert_eq!(cpu.get_byte_immediate(), 0x11);
+        cpu.reg.pc += 0x1;
+        assert_eq!(cpu.get_byte_immediate(), 0x24);
+        assert_eq!(cpu.get_bytes_immediate(), 0x3124);
+    }
+
+    #[test]
     fn test_add() {
         let mut cpu = CPU::new();
 
@@ -407,6 +453,21 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(Flag::S), true);
         assert_eq!(cpu.reg.get_flag(Flag::P), false);
         assert_eq!(cpu.reg.get_flag(Flag::C), true);
+        assert_eq!(cpu.reg.get_flag(Flag::AC), true);
+
+        cpu.reg.a = 0x0;
+        cpu.memory[0x0] = 0x87;
+        cpu.memory[0x1001] = 0xFF;
+        cpu.reg.set_hl(0x1001);
+
+        cpu.execute_opcode(cpu.fetch());
+
+        assert_eq!(cpu.reg.a, 0xFF);
+
+        assert_eq!(cpu.reg.get_flag(Flag::Z), false);
+        assert_eq!(cpu.reg.get_flag(Flag::S), true);
+        assert_eq!(cpu.reg.get_flag(Flag::P), true);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
         assert_eq!(cpu.reg.get_flag(Flag::AC), true);
     }
 }
