@@ -66,7 +66,7 @@ impl CPU {
             0x00 => { println!("NOP"); 1 },
             0x01 => { self.reg.set_bc(self.get_bytes_immediate()); 3 },
             0x02 => { self.memory[self.reg.get_bc()] = self.reg.a; 1 },
-            0x03 => {0},
+            0x03 => { self.reg.set_bc(self.reg.get_bc() + 1);      1 },
             0x04 => {0},
             0x05 => {0},
             0x06 => {0},
@@ -86,7 +86,7 @@ impl CPU {
             0x10 => {0},
             0x11 => { self.reg.set_de(self.get_bytes_immediate()); 3 },
             0x12 => { self.memory[self.reg.get_de()] = self.reg.a; 1 },
-            0x13 => {0},
+            0x13 => { self.reg.set_de(self.reg.get_de() + 1);      1 },
             0x14 => {0},
             0x15 => {0},
             0x16 => {0},
@@ -106,7 +106,7 @@ impl CPU {
             0x20 => {0},
             0x21 => { self.reg.set_hl(self.get_bytes_immediate()); 3 },
             0x22 => {0},
-            0x23 => {0},
+            0x23 => { self.reg.set_hl(self.reg.get_hl() + 1);      1 },
             0x24 => {0},
             0x25 => {0},
             0x26 => {0},
@@ -538,5 +538,26 @@ mod tests {
         cpu.tick();
 
         assert_eq!(cpu.memory[0xEA3], 0x82);
+    }
+
+    #[test]
+    fn test_inx() {
+        let mut cpu = CPU::new();
+
+        cpu.memory[0] = 0x3;
+        cpu.memory[1] = 0x13;
+        cpu.memory[2] = 0x23;
+
+        cpu.reg.set_bc(0);
+        cpu.reg.set_de(0);
+        cpu.reg.set_hl(0);
+
+        cpu.tick();
+        cpu.tick();
+        cpu.tick();
+
+        assert_eq!(cpu.reg.get_bc(), 0x1);
+        assert_eq!(cpu.reg.get_de(), 0x1);
+        assert_eq!(cpu.reg.get_hl(), 0x1);
     }
 }
