@@ -1,2 +1,4 @@
 ignore:
   - "main.rs"
+  - "disassembler.rs"
+  - "mod.rs"
