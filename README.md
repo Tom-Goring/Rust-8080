@@ -23,3 +23,8 @@ I'm using a few resources for this:
 - [Emulator 101's 8080 OpCode reference](http://www.emulator101.com/reference/8080-by-opcode.html)
 - [This summary of 8080 instructions](http://textfiles.com/programming/8080.op)
 - [The 8080 Programmers Manual](https://altairclone.com/downloads/manuals/8080%20Programmers%20Manual.pdf)
+
+## Reflections for next time
+
+A few things to possibly remember/incorporate next time I write something like this
+- Use enums for register access? Would let me more easily iterate over them
