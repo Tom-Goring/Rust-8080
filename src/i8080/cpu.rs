@@ -24,13 +24,12 @@ impl CPU {
         self.execute_opcode(opcode);
     }
 
-    pub fn fetch(&self) -> Byte { // TODO: Add test
+    pub fn fetch(&self) -> Byte {
         self.memory[self.reg.pc]
     }
 }
 
 impl CPU {
-
     fn get_byte_at_address(&self, address: Address) -> Byte {
         self.memory[address]
     }
@@ -47,7 +46,6 @@ impl CPU {
         self.get_bytes_at_address(self.reg.pc + 1)
     }
 
-
     fn add(&mut self, reg: Byte) {
         let sum: u16 = self.reg.a as u16 + reg as u16;
         self.reg.set_flag(Flag::C, sum > 0xFF);
@@ -63,10 +61,10 @@ impl CPU {
 
 impl CPU {
     pub fn execute_opcode(&mut self, opcode: Byte) {
-        match opcode {
+        match opcode { // TODO: add a `let =` that returns the oplength and cycles
             // 00
-            0x00 => {  },
-            0x01 => {},
+            0x00 => { println!("NOP"); },
+            0x01 => { self.reg.set_bc(self.get_bytes_immediate()); },
             0x02 => {},
             0x03 => {},
             0x04 => {},
@@ -86,7 +84,7 @@ impl CPU {
 
             // 10
             0x10 => {},
-            0x11 => {},
+            0x11 => { self.reg.set_de(self.get_bytes_immediate()); },
             0x12 => {},
             0x13 => {},
             0x14 => {},
@@ -106,7 +104,7 @@ impl CPU {
 
             // 20
             0x20 => {},
-            0x21 => {},
+            0x21 => { self.reg.set_hl(self.get_bytes_immediate()); },
             0x22 => {},
             0x23 => {},
             0x24 => {},
@@ -126,7 +124,7 @@ impl CPU {
 
             // 30
             0x30 => {},
-            0x31 => {},
+            0x31 => { self.reg.sp = self.get_bytes_immediate(); },
             0x32 => {},
             0x33 => {},
             0x34 => {},
@@ -431,7 +429,7 @@ mod tests {
 
         assert_eq!(cpu.memory[0], 0x80);
 
-        cpu.execute_opcode(cpu.fetch());
+        cpu.tick();
 
         assert_eq!(cpu.reg.a, 2);
 
@@ -447,7 +445,7 @@ mod tests {
         assert_eq!(cpu.reg.a, 0xFF);
         assert_eq!(cpu.reg.b, 0xFF);
 
-        cpu.execute_opcode(cpu.fetch());
+        cpu.tick();
         
         assert_eq!(cpu.reg.get_flag(Flag::Z), false);
         assert_eq!(cpu.reg.get_flag(Flag::S), true);
@@ -460,7 +458,7 @@ mod tests {
         cpu.memory[0x1001] = 0xFF;
         cpu.reg.set_hl(0x1001);
 
-        cpu.execute_opcode(cpu.fetch());
+        cpu.tick();
 
         assert_eq!(cpu.reg.a, 0xFF);
 
@@ -469,5 +467,29 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(Flag::P), true);
         assert_eq!(cpu.reg.get_flag(Flag::C), false);
         assert_eq!(cpu.reg.get_flag(Flag::AC), true);
+    }
+
+    #[test]
+    fn test_lxi() {
+        let mut cpu = CPU::new();
+
+        cpu.memory[1] = 0x35;
+        cpu.memory[2] = 0x76;
+
+        cpu.memory[0] = 0x1;
+        cpu.tick();
+        assert_eq!(cpu.reg.get_bc(), 0x7635);
+
+        cpu.memory[0] = 0x11;
+        cpu.tick();
+        assert_eq!(cpu.reg.get_de(), 0x7635);
+
+        cpu.memory[0] = 0x21;
+        cpu.tick();
+        assert_eq!(cpu.reg.get_hl(), 0x7635);
+
+        cpu.memory[0] = 0x31;
+        cpu.tick();
+        assert_eq!(cpu.reg.sp, 0x7635);
     }
 }
