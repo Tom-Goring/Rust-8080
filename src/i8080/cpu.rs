@@ -91,7 +91,7 @@ impl CPU {
             // 08
             0x08 => { println!("NOP"); 1 },
             0x09 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_bc()); 1 },
-            0x0a => {0},
+            0x0a => { self.reg.a = self.memory[self.reg.get_bc()]; 1 },
             0x0b => {0},
             0x0c => { self.reg.c += 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
             0x0d => { self.reg.c -= 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
@@ -111,7 +111,7 @@ impl CPU {
             // 18
             0x18 => {0},
             0x19 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_de()); 1 },
-            0x1a => {0},
+            0x1a => { self.reg.a = self.memory[self.reg.get_de()]; 1 },
             0x1b => {0},
             0x1c => { self.reg.e += 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
             0x1d => { self.reg.e -= 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
@@ -764,5 +764,23 @@ mod tests {
         cpu.tick();
 
         assert_eq!(cpu.reg.get_hl(), 0x6);
+    }
+
+    #[test]
+    fn test_ldax() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x0A;
+        cpu.memory[1] = 0x1A;
+
+        cpu.memory[0xF1] = 0x10;
+        cpu.memory[0xF2] = 0x20;
+
+        cpu.reg.set_bc(0xF1);
+        cpu.reg.set_de(0xF2);
+
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0x10);
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0x20);
     }
 }
