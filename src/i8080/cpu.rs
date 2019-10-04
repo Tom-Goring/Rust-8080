@@ -96,7 +96,11 @@ impl CPU {
             0x0c => { self.reg.c += 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
             0x0d => { self.reg.c -= 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
             0x0e => { self.reg.c = self.get_byte_immediate(); 2 },
-            0x0f => {0},
+            0x0f => {
+                self.reg.set_flag(Flag::C, self.reg.a << 7 != 0);
+                self.reg.a = self.reg.a << 7 | self.reg.a >> 1;
+                1
+            },
 
             // 10
             0x10 => {0},
@@ -805,5 +809,23 @@ mod tests {
         assert_eq!(cpu.reg.get_de(), 0);
         assert_eq!(cpu.reg.get_hl(), 0);
         assert_eq!(cpu.reg.sp, 0);
+    }
+
+    #[test]
+    fn test_rrc() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x0F;
+        cpu.reg.a = 0b00000001;
+
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b10000000);
+        assert_eq!(cpu.reg.get_flag(Flag::C), true);
+
+        cpu.reg.pc = 0;
+        cpu.reg.a = 0b10000000;
+        cpu.tick();
+
+        assert_eq!(cpu.reg.a, 0b01000000);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
     }
 }
