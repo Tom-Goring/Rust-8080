@@ -81,7 +81,7 @@ impl CPU {
             0x03 => { self.reg.set_bc(self.reg.get_bc() + 1);      1 },
             0x04 => { self.reg.b += 1; self.set_zspac_flags_on_byte(self.reg.b); 1 },
             0x05 => { self.reg.b -= 1; self.set_zspac_flags_on_byte(self.reg.b); 1 },
-            0x06 => {0},
+            0x06 => { self.reg.b = self.get_byte_immediate(); 2 },
             0x07 => {0},
 
             // 08
@@ -91,7 +91,7 @@ impl CPU {
             0x0b => {0},
             0x0c => { self.reg.c += 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
             0x0d => { self.reg.c -= 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
-            0x0e => {0},
+            0x0e => { self.reg.c = self.get_byte_immediate(); 2 },
             0x0f => {0},
 
             // 10
@@ -101,7 +101,7 @@ impl CPU {
             0x13 => { self.reg.set_de(self.reg.get_de() + 1);      1 },
             0x14 => { self.reg.d += 1; self.set_zspac_flags_on_byte(self.reg.d); 1 },
             0x15 => { self.reg.d -= 1; self.set_zspac_flags_on_byte(self.reg.d); 1 },
-            0x16 => {0},
+            0x16 => { self.reg.d = self.get_byte_immediate(); 2 },
             0x17 => {0},
 
             // 18
@@ -111,7 +111,7 @@ impl CPU {
             0x1b => {0},
             0x1c => { self.reg.e += 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
             0x1d => { self.reg.e -= 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
-            0x1e => {0},
+            0x1e => { self.reg.e = self.get_byte_immediate(); 2 },
             0x1f => {0},
 
             // 20
@@ -121,7 +121,7 @@ impl CPU {
             0x23 => { self.reg.set_hl(self.reg.get_hl() + 1);      1 },
             0x24 => { self.reg.h += 1; self.set_zspac_flags_on_byte(self.reg.h); 1 },
             0x25 => { self.reg.h -= 1; self.set_zspac_flags_on_byte(self.reg.h); 1 },
-            0x26 => {0},
+            0x26 => { self.reg.h = self.get_byte_immediate(); 2 },
             0x27 => {0},
 
             // 28
@@ -131,7 +131,7 @@ impl CPU {
             0x2b => {0},
             0x2c => { self.reg.l += 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
             0x2d => { self.reg.l -= 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
-            0x2e => {0},
+            0x2e => { self.reg.l = self.get_byte_immediate(); 2 },
             0x2f => {0},
 
             // 30
@@ -149,7 +149,7 @@ impl CPU {
                 self.set_zspac_flags_on_byte(self.memory[self.reg.get_hl()]); 
                 1
             },
-            0x36 => {0},
+            0x36 => { self.memory[self.reg.get_hl()] = self.get_byte_immediate(); 2 },
             0x37 => {0},
 
             // 38
@@ -159,7 +159,7 @@ impl CPU {
             0x3b => {0},
             0x3c => { self.reg.a += 1; self.set_zspac_flags_on_byte(self.reg.a); 1 },
             0x3d => { self.reg.a -= 1; self.set_zspac_flags_on_byte(self.reg.a); 1},
-            0x3e => {0},
+            0x3e => { self.reg.a = self.get_byte_immediate(); 2 },
             0x3f => {0},
 
             // 40
@@ -684,4 +684,41 @@ mod tests {
         cpu.tick();
         assert_eq!(cpu.memory[8], 1);
     }
+
+    #[test]
+    fn test_mvi() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x06;
+        cpu.memory[1] = 0x10;
+        cpu.memory[2] = 0x0E;
+        cpu.memory[3] = 0x10;
+        cpu.memory[4] = 0x16;
+        cpu.memory[5] = 0x10;
+        cpu.memory[6] = 0x1E;
+        cpu.memory[7] = 0x10;
+        cpu.memory[8] = 0x26;
+        cpu.memory[9] = 0x10;
+        cpu.memory[10] = 0x2E;
+        cpu.memory[11] = 0x10;
+        cpu.memory[12] = 0x3E;
+        cpu.memory[13] = 0x10;
+        cpu.memory[14] = 0x36;
+        cpu.memory[15] = 0x10;
+
+        for x in 0..7 {
+            cpu.tick();
+        }
+
+        assert_eq!(cpu.reg.a, 0x10);
+        assert_eq!(cpu.reg.b, 0x10);
+        assert_eq!(cpu.reg.c, 0x10);
+        assert_eq!(cpu.reg.d, 0x10);
+        assert_eq!(cpu.reg.e, 0x10);
+        assert_eq!(cpu.reg.h, 0x10);
+        assert_eq!(cpu.reg.l, 0x10);
+
+        cpu.reg.set_hl(0xFF);
+        cpu.tick();
+        assert_eq!(cpu.memory[cpu.reg.get_hl()], 0x10);
+        }
 }
