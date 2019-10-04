@@ -92,7 +92,7 @@ impl CPU {
             0x08 => { println!("NOP"); 1 },
             0x09 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_bc()); 1 },
             0x0a => { self.reg.a = self.memory[self.reg.get_bc()]; 1 },
-            0x0b => {0},
+            0x0b => { self.reg.set_bc(self.reg.get_bc() - 1); 1 },
             0x0c => { self.reg.c += 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
             0x0d => { self.reg.c -= 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
             0x0e => { self.reg.c = self.get_byte_immediate(); 2 },
@@ -112,7 +112,7 @@ impl CPU {
             0x18 => {0},
             0x19 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_de()); 1 },
             0x1a => { self.reg.a = self.memory[self.reg.get_de()]; 1 },
-            0x1b => {0},
+            0x1b => { self.reg.set_de(self.reg.get_de() - 1); 1 },
             0x1c => { self.reg.e += 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
             0x1d => { self.reg.e -= 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
             0x1e => { self.reg.e = self.get_byte_immediate(); 2 },
@@ -132,7 +132,7 @@ impl CPU {
             0x28 => {0},
             0x29 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_hl()); 1 },
             0x2a => {0},
-            0x2b => {0},
+            0x2b => { self.reg.set_hl(self.reg.get_hl() - 1); 1 },
             0x2c => { self.reg.l += 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
             0x2d => { self.reg.l -= 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
             0x2e => { self.reg.l = self.get_byte_immediate(); 2 },
@@ -160,7 +160,7 @@ impl CPU {
             0x38 => {0},
             0x39 => {0},
             0x3a => {0},
-            0x3b => {0},
+            0x3b => { self.reg.sp -= 1; 1 },
             0x3c => { self.reg.a += 1; self.set_zspac_flags_on_byte(self.reg.a); 1 },
             0x3d => { self.reg.a -= 1; self.set_zspac_flags_on_byte(self.reg.a); 1},
             0x3e => { self.reg.a = self.get_byte_immediate(); 2 },
@@ -782,5 +782,28 @@ mod tests {
         assert_eq!(cpu.reg.a, 0x10);
         cpu.tick();
         assert_eq!(cpu.reg.a, 0x20);
+    }
+
+    #[test]
+    fn test_dcx() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x0B;
+        cpu.memory[1] = 0x1B;
+        cpu.memory[2] = 0x2B;
+        cpu.memory[3] = 0x3B;
+
+        cpu.reg.set_bc(1);
+        cpu.reg.set_de(1);
+        cpu.reg.set_hl(1);
+        cpu.reg.sp = 1;
+
+        for x in 0..4 {
+            cpu.tick();
+        }
+
+        assert_eq!(cpu.reg.get_bc(), 0);
+        assert_eq!(cpu.reg.get_de(), 0);
+        assert_eq!(cpu.reg.get_hl(), 0);
+        assert_eq!(cpu.reg.sp, 0);
     }
 }
