@@ -720,5 +720,5 @@ mod tests {
         cpu.reg.set_hl(0xFF);
         cpu.tick();
         assert_eq!(cpu.memory[cpu.reg.get_hl()], 0x10);
-        }
+    }
 }
