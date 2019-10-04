@@ -89,8 +89,8 @@ impl CPU {
             },
 
             // 08
-            0x08 => {0},
-            0x09 => {0},
+            0x08 => { println!("NOP"); 1 },
+            0x09 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_bc()); 1 },
             0x0a => {0},
             0x0b => {0},
             0x0c => { self.reg.c += 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
@@ -110,7 +110,7 @@ impl CPU {
 
             // 18
             0x18 => {0},
-            0x19 => {0},
+            0x19 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_de()); 1 },
             0x1a => {0},
             0x1b => {0},
             0x1c => { self.reg.e += 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
@@ -130,7 +130,7 @@ impl CPU {
 
             // 28
             0x28 => {0},
-            0x29 => {0},
+            0x29 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_hl()); 1 },
             0x2a => {0},
             0x2b => {0},
             0x2c => { self.reg.l += 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
@@ -747,5 +747,22 @@ mod tests {
         cpu.tick();
         assert_eq!(cpu.reg.a, 0b00000010);
         assert_eq!(cpu.reg.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_dad() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x9;
+        cpu.memory[1] = 0x19;
+        cpu.memory[2] = 0x29;
+        cpu.reg.set_bc(0x1);
+        cpu.reg.set_de(0x1);
+        cpu.reg.set_hl(0x1);
+
+        cpu.tick();
+        cpu.tick();
+        cpu.tick();
+
+        assert_eq!(cpu.reg.get_hl(), 0x6);
     }
 }
