@@ -162,12 +162,18 @@ impl CPU {
             0x24 => { self.reg.h += 1; self.set_zspac_flags_on_byte(self.reg.h); 1 },
             0x25 => { self.reg.h -= 1; self.set_zspac_flags_on_byte(self.reg.h); 1 },
             0x26 => { self.reg.h = self.read_byte_immediate(); 2 },
-            0x27 => {0},
+            0x27 => {0}, // TODO: After BCD -> DAA
 
             // 28
-            0x28 => {0},
+            0x28 => { println!("NOP"); 1 },
             0x29 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_hl()); 1 },
-            0x2a => {0},
+            0x2a => {
+                let address = self.read_word_immediate() & 0x00FF;
+                self.reg.l = self.memory[address];
+                let address = self.read_word_immediate() >> 8;
+                self.reg.h = self.memory[address];
+                3
+            },
             0x2b => { self.reg.set_hl(self.reg.get_hl() - 1); 1 },
             0x2c => { self.reg.l += 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
             0x2d => { self.reg.l -= 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
@@ -907,5 +913,22 @@ mod tests {
 
         assert_eq!(cpu.memory[0xAA], 0xCC);
         assert_eq!(cpu.memory[0xBB], 0xDD);
+    }
+
+    #[test]
+    fn test_lhld() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x2a;
+        cpu.memory[1] = 0xAA;
+        cpu.memory[2] = 0xBB;
+        cpu.memory[0xAA] = 0xEE;
+        cpu.memory[0xBB] = 0xFF;
+        cpu.reg.l = 0xCC;
+        cpu.reg.h = 0xDD;
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg.l, 0xEE);
+        assert_eq!(cpu.reg.h, 0xFF);
     }
 }
