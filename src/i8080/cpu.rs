@@ -99,6 +99,30 @@ impl CPU {
         1
     }
 
+    fn ana(&mut self, reg: Byte) -> Word {
+        self.reg.a &= reg;
+        self.set_all_flags_on_word(self.reg.a as Word);
+        1
+    }
+
+    fn xra(&mut self, reg: Byte) -> Word {
+        self.reg.a ^= reg;
+        self.set_all_flags_on_word(self.reg.a as Word);
+        1
+    }
+
+    fn ora(&mut self, reg: Byte) -> Word {
+        self.reg.a |= reg;
+        self.set_all_flags_on_word(self.reg.a as Word);
+        1
+    }
+
+    fn cmp(&mut self, reg: Byte) -> Word {
+        let sum = self.reg.a.wrapping_sub(reg);
+        self.set_all_flags_on_word(sum as Word);
+        1
+    }
+
     fn rlc(&mut self) -> Word {
         self.reg.set_flag(Flag::C, self.reg.a >> 7 != 0);
         self.reg.a = self.reg.a << 1 | self.reg.a >> 7;
@@ -360,44 +384,44 @@ impl CPU {
             0x9f => { self.sbb(self.reg.a) },
 
             // a0
-            0xa0 => {0},
-            0xa1 => {0},
-            0xa2 => {0},
-            0xa3 => {0},
-            0xa4 => {0},
-            0xa5 => {0},
-            0xa6 => {0},
-            0xa7 => {0},
+            0xa0 => { self.ana(self.reg.b) },
+            0xa1 => { self.ana(self.reg.c) },
+            0xa2 => { self.ana(self.reg.d) },
+            0xa3 => { self.ana(self.reg.e) },
+            0xa4 => { self.ana(self.reg.h) },
+            0xa5 => { self.ana(self.reg.l) },
+            0xa6 => { self.ana(self.read_byte_at_address(self.reg.get_hl())) },
+            0xa7 => { self.ana(self.reg.a) },
 
             // a8
-            0xa8 => {0},
-            0xa9 => {0},
-            0xaa => {0},
-            0xab => {0},
-            0xac => {0},
-            0xad => {0},
-            0xae => {0},
-            0xaf => {0},
+            0xa8 => { self.xra(self.reg.b) },
+            0xa9 => { self.xra(self.reg.c) },
+            0xaa => { self.xra(self.reg.d) },
+            0xab => { self.xra(self.reg.e) },
+            0xac => { self.xra(self.reg.h) },
+            0xad => { self.xra(self.reg.l) },
+            0xae => { self.xra(self.read_byte_at_address(self.reg.get_hl())) },
+            0xaf => { self.xra(self.reg.a) },
 
             // b0
-            0xb0 => {0},
-            0xb1 => {0},
-            0xb2 => {0},
-            0xb3 => {0},
-            0xb4 => {0},
-            0xb5 => {0},
-            0xb6 => {0},
-            0xb7 => {0},
+            0xb0 => { self.ora(self.reg.b) },
+            0xb1 => { self.ora(self.reg.c) },
+            0xb2 => { self.ora(self.reg.d) },
+            0xb3 => { self.ora(self.reg.e) },
+            0xb4 => { self.ora(self.reg.h) },
+            0xb5 => { self.ora(self.reg.l) },
+            0xb6 => { self.ora(self.read_byte_at_address(self.reg.get_hl())) },
+            0xb7 => { self.ora(self.reg.a) },
 
             // b8
-            0xb8 => {0},
-            0xb9 => {0},
-            0xba => {0},
-            0xbb => {0},
-            0xbc => {0},
-            0xbd => {0},
-            0xbe => {0},
-            0xbf => {0},
+            0xb8 => { self.cmp(self.reg.b) },
+            0xb9 => { self.cmp(self.reg.c) },
+            0xba => { self.cmp(self.reg.d) },
+            0xbb => { self.cmp(self.reg.e) },
+            0xbc => { self.cmp(self.reg.h) },
+            0xbd => { self.cmp(self.reg.l) },
+            0xbe => { self.cmp(self.read_byte_at_address(self.reg.get_hl())) },
+            0xbf => { self.cmp(self.reg.a) },
 
             // c0
             0xc0 => {0},
@@ -1272,6 +1296,74 @@ mod tests {
         assert_eq!(cpu.reg.a, 0b11111111 - 7);
 
         cpu.tick();
+
+        assert_eq!(cpu.reg.a, 0);
+    }
+
+    #[test]
+    fn test_ana() { // TODO: add proper test for ana
+        let mut cpu = CPU::new();
+        let mut index = 0;
+    
+        for x in 0xa0..0xa8 {
+            cpu.memory[index] = x;
+            index += 1;
+        }
+
+        for x in 0xa0..0xa8 {
+            cpu.tick();
+        }
+
+        assert_eq!(cpu.reg.a, 0);
+    }
+
+    #[test]
+    fn test_xra() { // TODO: add proper test for xra
+        let mut cpu = CPU::new();
+        let mut index = 0;
+    
+        for x in 0xa8..0xb0 {
+            cpu.memory[index] = x;
+            index += 1;
+        }
+
+        for x in 0xa8..0xb0 {
+            cpu.tick();
+        }
+
+        assert_eq!(cpu.reg.a, 0);
+    }
+
+    #[test]
+    fn test_ora() { // TODO: add proper test for ora
+        let mut cpu = CPU::new();
+        let mut index = 0;
+    
+        for x in 0xb0..0xb8 {
+            cpu.memory[index] = x;
+            index += 1;
+        }
+
+        for x in 0xb0..0xb8 {
+            cpu.tick();
+        }
+
+        assert_eq!(cpu.reg.a, 0xB0);
+    }
+
+    #[test]
+    fn test_cmp() { // TODO: add proper test for cmp
+        let mut cpu = CPU::new();
+        let mut index = 0;
+    
+        for x in 0xb8..0xc0 {
+            cpu.memory[index] = x;
+            index += 1;
+        }
+
+        for x in 0xb8..0xc0 {
+            cpu.tick();
+        }
 
         assert_eq!(cpu.reg.a, 0);
     }
