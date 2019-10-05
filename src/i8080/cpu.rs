@@ -569,7 +569,6 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(Flag::AC), true);
     }
 
-    // TODO: perhaps turn this into a full check of every opcode via range & disassembly
     #[test]
     fn test_pc_increment() { 
         let mut cpu = CPU::new();
