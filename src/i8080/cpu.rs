@@ -85,8 +85,15 @@ impl CPU {
     }
 
     fn sub(&mut self, reg: Byte) -> Word {
+        let sum: u16 = (self.reg.a as u16).wrapping_sub(reg as u16);
+        self.set_all_flags_on_word(sum);
+        self.reg.a = sum as Byte;
+        1
+    }
+
+    fn sbb(&mut self, reg: Byte) -> Word {
         let mut sum: u16 = (self.reg.a as u16).wrapping_sub(reg as u16);
-        if self.reg.get_flag(Flag::C) {sum += 1};
+        if self.reg.get_flag(Flag::C) {sum -= 1};
         self.set_all_flags_on_word(sum);
         self.reg.a = sum as Byte;
         1
@@ -343,14 +350,14 @@ impl CPU {
             0x97 => { self.sub(self.reg.a) },
 
             // 98
-            0x98 => {0},
-            0x99 => {0},
-            0x9a => {0},
-            0x9b => {0},
-            0x9c => {0},
-            0x9d => {0},
-            0x9e => {0},
-            0x9f => {0},
+            0x98 => { self.sbb(self.reg.b) },
+            0x99 => { self.sbb(self.reg.c) },
+            0x9a => { self.sbb(self.reg.d) },
+            0x9b => { self.sbb(self.reg.e) },
+            0x9c => { self.sbb(self.reg.h) },
+            0x9d => { self.sbb(self.reg.l) },
+            0x9e => { self.sbb(self.read_byte_at_address(self.reg.get_hl())) },
+            0x9f => { self.sbb(self.reg.a) },
 
             // a0
             0xa0 => {0},
@@ -1228,7 +1235,41 @@ mod tests {
             cpu.tick();
         }
         
-        assert_eq!(cpu.reg.a, 0b11111010);
+        assert_eq!(cpu.reg.a, 0b11111111 - 6);
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg.a, 0);
+    }
+
+    #[test]
+    fn test_sbb() {
+        let mut cpu = CPU::new();
+        let mut index = 0;
+    
+        for x in 0x98..0xa0 {
+            cpu.memory[index] = x;
+            index += 1;
+        }
+
+        cpu.reg.a = 0b0000000;
+        cpu.reg.b = 0b0000001;
+        cpu.reg.c = 0b0000001;
+        cpu.reg.d = 0b0000001;
+        cpu.reg.e = 0b0000001;
+        cpu.reg.h = 0b0000001;
+        cpu.reg.l = 0b0000001;
+        cpu.memory[cpu.reg.get_hl()] = 0b0000001;
+
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b11111111);
+        assert_eq!(cpu.reg.get_flag(Flag::C), true);
+
+        for x in 0..6 {
+            cpu.tick();
+        }
+        
+        assert_eq!(cpu.reg.a, 0b11111111 - 7);
 
         cpu.tick();
 
