@@ -151,7 +151,13 @@ impl CPU {
             // 20
             0x20 => { println!("NOP"); 1 },
             0x21 => { self.reg.set_hl(self.read_word_immediate()); 3 },
-            0x22 => {0},
+            0x22 => {
+                let address = self.read_word_immediate() & 0x00FF;
+                self.memory[address] = self.reg.l;
+                let address = self.read_word_immediate() >> 8;
+                self.memory[address] = self.reg.h;
+                3
+            },
             0x23 => { self.reg.set_hl(self.reg.get_hl() + 1);      1 },
             0x24 => { self.reg.h += 1; self.set_zspac_flags_on_byte(self.reg.h); 1 },
             0x25 => { self.reg.h -= 1; self.set_zspac_flags_on_byte(self.reg.h); 1 },
@@ -886,5 +892,20 @@ mod tests {
         cpu.tick();
 
         assert_eq!(cpu.reg.a, 0b10100000);
+    }
+
+    #[test]
+    fn test_shld() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x22;
+        cpu.memory[1] = 0xAA;
+        cpu.memory[2] = 0xBB;
+        cpu.reg.l = 0xCC;
+        cpu.reg.h = 0xDD;
+
+        cpu.tick();
+
+        assert_eq!(cpu.memory[0xAA], 0xCC);
+        assert_eq!(cpu.memory[0xBB], 0xDD);
     }
 }
