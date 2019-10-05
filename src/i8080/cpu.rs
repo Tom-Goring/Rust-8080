@@ -217,84 +217,84 @@ impl CPU {
             0x3f => { self.reg.set_flag(Flag::C, !self.reg.get_flag(Flag::C)); 1 },
 
             // 40
-            0x40 => {0},
-            0x41 => {0},
-            0x42 => {0},
-            0x43 => {0},
-            0x44 => {0},
-            0x45 => {0},
-            0x46 => {0},
-            0x47 => {0},
+            0x40 => { self.reg.b = self.reg.b; 1},
+            0x41 => { self.reg.b = self.reg.c; 1},
+            0x42 => { self.reg.b = self.reg.d; 1},
+            0x43 => { self.reg.b = self.reg.e; 1},
+            0x44 => { self.reg.b = self.reg.h; 1},
+            0x45 => { self.reg.b = self.reg.l; 1},
+            0x46 => { self.reg.b = self.memory[self.reg.get_hl()]; 1},
+            0x47 => { self.reg.b = self.reg.a; 1},
 
             // 48
-            0x48 => {0},
-            0x49 => {0},
-            0x4a => {0},
-            0x4b => {0},
-            0x4c => {0},
-            0x4d => {0},
-            0x4e => {0},
-            0x4f => {0},
+            0x48 => { self.reg.c = self.reg.b; 1},
+            0x49 => { self.reg.c = self.reg.c; 1},
+            0x4a => { self.reg.c = self.reg.d; 1},
+            0x4b => { self.reg.c = self.reg.e; 1},
+            0x4c => { self.reg.c = self.reg.h; 1},
+            0x4d => { self.reg.c = self.reg.l; 1},
+            0x4e => { self.reg.c = self.memory[self.reg.get_hl()]; 1},
+            0x4f => { self.reg.c = self.reg.a; 1},
 
             // 50
-            0x50 => {0},
-            0x51 => {0},
-            0x52 => {0},
-            0x53 => {0},
-            0x54 => {0},
-            0x55 => {0},
-            0x56 => {0},
-            0x57 => {0},
+            0x50 => { self.reg.d = self.reg.b; 1},
+            0x51 => { self.reg.d = self.reg.c; 1},
+            0x52 => { self.reg.d = self.reg.d; 1},
+            0x53 => { self.reg.d = self.reg.e; 1},
+            0x54 => { self.reg.d = self.reg.h; 1},
+            0x55 => { self.reg.d = self.reg.l; 1},
+            0x56 => { self.reg.d = self.memory[self.reg.get_hl()]; 1},
+            0x57 => { self.reg.d = self.reg.a; 1},
 
             // 58
-            0x58 => {0},
-            0x59 => {0},
-            0x5a => {0},
-            0x5b => {0},
-            0x5c => {0},
-            0x5d => {0},
-            0x5e => {0},
-            0x5f => {0},
+            0x58 => { self.reg.e = self.reg.b; 1},
+            0x59 => { self.reg.e = self.reg.c; 1},
+            0x5a => { self.reg.e = self.reg.d; 1},
+            0x5b => { self.reg.e = self.reg.e; 1},
+            0x5c => { self.reg.e = self.reg.h; 1},
+            0x5d => { self.reg.e = self.reg.l; 1},
+            0x5e => { self.reg.e = self.memory[self.reg.get_hl()]; 1},
+            0x5f => { self.reg.e = self.reg.a; 1},
 
             // 60
-            0x60 => {0},
-            0x61 => {0},
-            0x62 => {0},
-            0x63 => {0},
-            0x64 => {0},
-            0x65 => {0},
-            0x66 => {0},
-            0x67 => {0},
+            0x60 => { self.reg.h = self.reg.b; 1},
+            0x61 => { self.reg.h = self.reg.c; 1},
+            0x62 => { self.reg.h = self.reg.d; 1},
+            0x63 => { self.reg.h = self.reg.e; 1},
+            0x64 => { self.reg.h = self.reg.h; 1},
+            0x65 => { self.reg.h = self.reg.l; 1},
+            0x66 => { self.reg.h = self.memory[self.reg.get_hl()]; 1},
+            0x67 => { self.reg.h = self.reg.a; 1},
 
             // 68
-            0x68 => {0},
-            0x69 => {0},
-            0x6a => {0},
-            0x6b => {0},
-            0x6c => {0},
-            0x6d => {0},
-            0x6e => {0},
-            0x6f => {0},
+            0x68 => { self.reg.l = self.reg.b; 1},
+            0x69 => { self.reg.l = self.reg.c; 1},
+            0x6a => { self.reg.l = self.reg.d; 1},
+            0x6b => { self.reg.l = self.reg.e; 1},
+            0x6c => { self.reg.l = self.reg.h; 1},
+            0x6d => { self.reg.l = self.reg.l; 1},
+            0x6e => { self.reg.l = self.memory[self.reg.get_hl()]; 1},
+            0x6f => { self.reg.l = self.reg.a; 1},
 
             // 70
-            0x70 => {0},
-            0x71 => {0},
-            0x72 => {0},
-            0x73 => {0},
-            0x74 => {0},
-            0x75 => {0},
-            0x76 => {0},
-            0x77 => {0},
+            0x70 => { self.memory[self.reg.get_hl()] = self.reg.b; 1},
+            0x71 => { self.memory[self.reg.get_hl()] = self.reg.c; 1},
+            0x72 => { self.memory[self.reg.get_hl()] = self.reg.d; 1},
+            0x73 => { self.memory[self.reg.get_hl()] = self.reg.e; 1},
+            0x74 => { self.memory[self.reg.get_hl()] = self.reg.h; 1},
+            0x75 => { self.memory[self.reg.get_hl()] = self.reg.l; 1},
+            0x76 => {0}, // TODO: HLT
+            0x77 => { self.memory[self.reg.get_hl()] = self.reg.a; 1},
 
             // 78
-            0x78 => {0},
-            0x79 => {0},
-            0x7a => {0},
-            0x7b => {0},
-            0x7c => {0},
-            0x7d => {0},
-            0x7e => {0},
-            0x7f => {0},
+            0x78 => { self.reg.a = self.reg.b; 1},
+            0x79 => { self.reg.a = self.reg.c; 1},
+            0x7a => { self.reg.a = self.reg.d; 1},
+            0x7b => { self.reg.a = self.reg.e; 1},
+            0x7c => { self.reg.a = self.reg.h; 1},
+            0x7d => { self.reg.a = self.reg.l; 1},
+            0x7e => { self.reg.a = self.memory[self.reg.get_hl()]; 1},
+            0x7f => { self.reg.a = self.reg.a; 1},
 
             // 80
             0x80 => { self.add(self.reg.b) },
@@ -1002,4 +1002,131 @@ mod tests {
         cpu.tick();
         assert_eq!(cpu.reg.get_flag(Flag::C), false);
     }
+
+    #[test]
+    fn test_mov() {
+        let mut cpu = CPU::new();
+        let mut index = 0;
+
+        for x in 0x40..0x7F {
+            cpu.memory[index] = x;
+            index += 1;
+        }
+
+        let values = [2, 3, 4, 5, 6, 7, 8, 9];
+
+        cpu.reg.b = values[0];
+        cpu.reg.c = values[1];
+        cpu.reg.d = values[2];
+        cpu.reg.e = values[3];
+        cpu.reg.h = values[4];
+        cpu.reg.l = values[5];
+        cpu.memory[cpu.reg.get_hl()] = values[6];
+        cpu.reg.a = values[7];
+
+        for x in 0..8 {
+            cpu.tick();
+            assert_eq!(cpu.reg.b, values[x]);
+        }
+
+        cpu.reg.b = values[0];
+        cpu.reg.c = values[1];
+        cpu.reg.d = values[2];
+        cpu.reg.e = values[3];
+        cpu.reg.h = values[4];
+        cpu.reg.l = values[5];
+        cpu.memory[cpu.reg.get_hl()] = values[6];
+        cpu.reg.a = values[7];
+
+        for x in 0..8 {
+            cpu.tick();
+            if x == 1 {cpu.reg.c = values[x]}
+            assert_eq!(cpu.reg.c, values[x]);
+        }
+
+        cpu.reg.b = values[0];
+        cpu.reg.c = values[1];
+        cpu.reg.d = values[2];
+        cpu.reg.e = values[3];
+        cpu.reg.h = values[4];
+        cpu.reg.l = values[5];
+        cpu.memory[cpu.reg.get_hl()] = values[6];
+        cpu.reg.a = values[7];
+
+        for x in 0..8 {
+            cpu.tick();
+            if x == 2 {cpu.reg.d = values[x]}
+            assert_eq!(cpu.reg.d, values[x]);
+        }
+
+        cpu.reg.b = values[0];
+        cpu.reg.c = values[1];
+        cpu.reg.d = values[2];
+        cpu.reg.e = values[3];
+        cpu.reg.h = values[4];
+        cpu.reg.l = values[5];
+        cpu.memory[cpu.reg.get_hl()] = values[6];
+        cpu.reg.a = values[7];
+
+        for x in 0..8 {
+            cpu.tick();
+            if x == 3 {cpu.reg.e = values[x]}
+            assert_eq!(cpu.reg.e, values[x]);
+        }
+
+        cpu.reg.b = values[0];
+        cpu.reg.c = values[1];
+        cpu.reg.d = values[2];
+        cpu.reg.e = values[3];
+        cpu.reg.h = values[4];
+        cpu.reg.l = values[5];
+        cpu.memory[cpu.reg.get_hl()] = values[6];
+        cpu.reg.a = values[7];
+
+        for x in 0..8 {
+            
+            if x == 6 {
+                cpu.reg.h = values[4];
+                cpu.reg.l = values[5];
+                cpu.memory[cpu.reg.get_hl()] = values[6];
+            }
+            cpu.tick();
+            if x == 4 {cpu.reg.h = values[x]};
+            assert_eq!(cpu.reg.h, values[x]);
+        }
+
+        cpu.reg.b = values[0];
+        cpu.reg.c = values[1];
+        cpu.reg.d = values[2];
+        cpu.reg.e = values[3];
+        cpu.reg.h = values[4];
+        cpu.reg.l = values[5];
+        cpu.memory[cpu.reg.get_hl()] = values[6];
+        cpu.reg.a = values[7];
+
+        for x in 0..8 {
+            cpu.tick();
+            if x == 5 {cpu.reg.l = values[x]}
+            assert_eq!(cpu.reg.l, values[x]);
+        }
+
+        cpu.reg.b = values[0];
+        cpu.reg.c = values[1];
+        cpu.reg.d = values[2];
+        cpu.reg.e = values[3];
+        cpu.reg.h = values[4];
+        cpu.reg.l = values[5];
+        cpu.memory[cpu.reg.get_hl()] = values[6];
+        cpu.reg.a = values[7];
+
+        for x in 0..8 {
+            if cpu.memory[cpu.reg.pc] != 0x76 {
+                println!("x: {}", x);
+                cpu.tick();
+                assert_eq!(cpu.memory[cpu.reg.get_hl()], values[x]);
+            } else {
+                cpu.reg.pc += 1;
+            }
+        }
+    }   
 }
