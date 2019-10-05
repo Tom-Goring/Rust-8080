@@ -76,6 +76,22 @@ impl CPU {
         1
     }
 
+    fn adc(&mut self, reg: Byte) -> Word {
+        let mut sum: u16 = self.reg.a as u16 + reg as u16;
+        if self.reg.get_flag(Flag::C) {sum += 1};
+        self.set_all_flags_on_word(sum);
+        self.reg.a = sum as Byte;
+        1
+    }
+
+    fn sub(&mut self, reg: Byte) -> Word {
+        let mut sum: u16 = self.reg.a as u16 - reg as u16;
+        if self.reg.get_flag(Flag::C) {sum += 1};
+        self.set_all_flags_on_word(sum);
+        self.reg.a = sum as Byte;
+        1
+    }
+
     fn rlc(&mut self) -> Word {
         self.reg.set_flag(Flag::C, self.reg.a >> 7 != 0);
         self.reg.a = self.reg.a << 1 | self.reg.a >> 7;
@@ -303,18 +319,18 @@ impl CPU {
             0x83 => { self.add(self.reg.e) },
             0x84 => { self.add(self.reg.h) },
             0x85 => { self.add(self.reg.l) },
-            0x86 => { self.add(self.reg.a) },
-            0x87 => { self.add(self.read_byte_at_address(self.reg.get_hl())) },
+            0x86 => { self.add(self.read_byte_at_address(self.reg.get_hl())) },
+            0x87 => { self.add(self.reg.a) },
 
             // 88
-            0x88 => {0},
-            0x89 => {0},
-            0x8a => {0},
-            0x8b => {0},
-            0x8c => {0},
-            0x8d => {0},
-            0x8e => {0},
-            0x8f => {0},
+            0x88 => { self.adc(self.reg.b) },
+            0x89 => { self.adc(self.reg.c) },
+            0x8a => { self.adc(self.reg.d) },
+            0x8b => { self.adc(self.reg.e) },
+            0x8c => { self.adc(self.reg.h) },
+            0x8d => { self.adc(self.reg.l) },
+            0x8e => { self.adc(self.read_byte_at_address(self.reg.get_hl())) },
+            0x8f => { self.adc(self.reg.a) },
 
             // 90
             0x90 => {0},
@@ -508,8 +524,8 @@ mod tests {
         cpu.memory[3] = 0x83;
         cpu.memory[4] = 0x84;
         cpu.memory[5] = 0x85;
-        cpu.memory[6] = 0x86;
-        cpu.memory[7] = 0x87;
+        cpu.memory[6] = 0x87;
+        cpu.memory[7] = 0x86;
 
         cpu.reg.a = 0b1;
         cpu.reg.b = 0b1;
@@ -1142,5 +1158,56 @@ mod tests {
             if x == 7 {cpu.reg.a = values[x]}
             assert_eq!(cpu.reg.a, values[x]);
         }
-    } 
+    }
+
+    #[test]
+    fn test_adc() {
+        let mut cpu = CPU::new();
+
+        cpu.memory[0] = 0x80;
+        cpu.memory[1] = 0x88;
+        cpu.memory[2] = 0x89;
+        cpu.memory[3] = 0x8a;
+        cpu.memory[4] = 0x8b;
+        cpu.memory[5] = 0x8c;
+        cpu.memory[6] = 0x8d;
+        cpu.memory[7] = 0x8e;
+        cpu.memory[8] = 0x8f;
+
+        cpu.reg.a = 0b11111111;
+        cpu.reg.b = 0b00000001;
+
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b00000000);
+
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b00000010);
+
+        cpu.reg.c = 1;
+        cpu.reg.d = 1;
+        cpu.reg.e = 1;
+        cpu.reg.h = 1;
+        cpu.reg.l = 1;
+        cpu.memory[cpu.reg.get_hl()] = 1;
+
+        for x in 0..6 {
+            cpu.tick();
+        }
+
+        assert_eq!(cpu.reg.a, 0b1000);
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg.a, 0b10000);
+    }
+
+    #[test]
+    fn test_sub() {
+        let mut cpu = CPU::new();
+        let mut index = 0;
+        for x in 0x90..0x98 {
+            cpu.memory[index];
+            index += 1;
+        }
+    }
 }
