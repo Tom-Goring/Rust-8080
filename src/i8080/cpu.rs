@@ -33,20 +33,25 @@ impl CPU {
 }
 
 impl CPU {
-    fn get_byte_at_address(&self, address: Address) -> Byte {
+    fn read_byte_at_address(&self, address: Address) -> Byte {
         self.memory[address]
     }
 
-    fn get_bytes_at_address(&self, address: Address) -> Word {
+    fn read_word_at_address(&self, address: Address) -> Word {
          ((self.memory[address + 1] as Word) << 8) | self.memory[address] as Word
     }
 
-    fn get_byte_immediate(&self) -> Byte {
-        self.get_byte_at_address(self.reg.pc + 1)
+    fn read_byte_immediate(&self) -> Byte {
+        self.read_byte_at_address(self.reg.pc + 1)
     }
 
-    fn get_bytes_immediate(&self) -> Word {
-        self.get_bytes_at_address(self.reg.pc + 1)
+    fn read_word_immediate(&self) -> Word {
+        self.read_word_at_address(self.reg.pc + 1)
+    }
+
+    fn write_word_to_memory(&mut self, address: Address, word: Word) {
+        self.memory[address + 1] = (word >> 8) as Byte;
+        self.memory[address] = word as u8;
     }
 
     fn set_zspac_flags_on_byte(&mut self, byte: Byte) {
@@ -105,12 +110,12 @@ impl CPU {
         match opcode {
             // 00
             0x00 => { println!("NOP"); 1 },
-            0x01 => { self.reg.set_bc(self.get_bytes_immediate()); 3 },
+            0x01 => { self.reg.set_bc(self.read_word_immediate()); 3 },
             0x02 => { self.memory[self.reg.get_bc()] = self.reg.a; 1 },
             0x03 => { self.reg.set_bc(self.reg.get_bc() + 1);      1 },
             0x04 => { self.reg.b += 1; self.set_zspac_flags_on_byte(self.reg.b); 1 },
             0x05 => { self.reg.b -= 1; self.set_zspac_flags_on_byte(self.reg.b); 1 },
-            0x06 => { self.reg.b = self.get_byte_immediate(); 2 },
+            0x06 => { self.reg.b = self.read_byte_immediate(); 2 },
             0x07 => { self.rlc() },
 
             // 08
@@ -120,17 +125,17 @@ impl CPU {
             0x0b => { self.reg.set_bc(self.reg.get_bc() - 1); 1 },
             0x0c => { self.reg.c += 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
             0x0d => { self.reg.c -= 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
-            0x0e => { self.reg.c = self.get_byte_immediate(); 2 },
+            0x0e => { self.reg.c = self.read_byte_immediate(); 2 },
             0x0f => { self.rrc() },
 
             // 10
             0x10 => { println!("NOP"); 1 },
-            0x11 => { self.reg.set_de(self.get_bytes_immediate()); 3 },
+            0x11 => { self.reg.set_de(self.read_word_immediate()); 3 },
             0x12 => { self.memory[self.reg.get_de()] = self.reg.a; 1 },
             0x13 => { self.reg.set_de(self.reg.get_de() + 1);      1 },
             0x14 => { self.reg.d += 1; self.set_zspac_flags_on_byte(self.reg.d); 1 },
             0x15 => { self.reg.d -= 1; self.set_zspac_flags_on_byte(self.reg.d); 1 },
-            0x16 => { self.reg.d = self.get_byte_immediate(); 2 },
+            0x16 => { self.reg.d = self.read_byte_immediate(); 2 },
             0x17 => { self.ral() },
 
             // 18
@@ -140,17 +145,17 @@ impl CPU {
             0x1b => { self.reg.set_de(self.reg.get_de() - 1); 1 },
             0x1c => { self.reg.e += 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
             0x1d => { self.reg.e -= 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
-            0x1e => { self.reg.e = self.get_byte_immediate(); 2 },
+            0x1e => { self.reg.e = self.read_byte_immediate(); 2 },
             0x1f => { self.rar() },
 
             // 20
             0x20 => { println!("NOP"); 1 },
-            0x21 => { self.reg.set_hl(self.get_bytes_immediate()); 3 },
+            0x21 => { self.reg.set_hl(self.read_word_immediate()); 3 },
             0x22 => {0},
             0x23 => { self.reg.set_hl(self.reg.get_hl() + 1);      1 },
             0x24 => { self.reg.h += 1; self.set_zspac_flags_on_byte(self.reg.h); 1 },
             0x25 => { self.reg.h -= 1; self.set_zspac_flags_on_byte(self.reg.h); 1 },
-            0x26 => { self.reg.h = self.get_byte_immediate(); 2 },
+            0x26 => { self.reg.h = self.read_byte_immediate(); 2 },
             0x27 => {0},
 
             // 28
@@ -160,12 +165,12 @@ impl CPU {
             0x2b => { self.reg.set_hl(self.reg.get_hl() - 1); 1 },
             0x2c => { self.reg.l += 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
             0x2d => { self.reg.l -= 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
-            0x2e => { self.reg.l = self.get_byte_immediate(); 2 },
+            0x2e => { self.reg.l = self.read_byte_immediate(); 2 },
             0x2f => {0},
 
             // 30
             0x30 => {0},
-            0x31 => { self.reg.sp = self.get_bytes_immediate(); 3 },
+            0x31 => { self.reg.sp = self.read_word_immediate(); 3 },
             0x32 => {0},
             0x33 => {0},
             0x34 => {
@@ -178,7 +183,7 @@ impl CPU {
                 self.set_zspac_flags_on_byte(self.memory[self.reg.get_hl()]); 
                 1
             },
-            0x36 => { self.memory[self.reg.get_hl()] = self.get_byte_immediate(); 2 },
+            0x36 => { self.memory[self.reg.get_hl()] = self.read_byte_immediate(); 2 },
             0x37 => {0},
 
             // 38
@@ -188,7 +193,7 @@ impl CPU {
             0x3b => { self.reg.sp -= 1; 1 },
             0x3c => { self.reg.a += 1; self.set_zspac_flags_on_byte(self.reg.a); 1 },
             0x3d => { self.reg.a -= 1; self.set_zspac_flags_on_byte(self.reg.a); 1},
-            0x3e => { self.reg.a = self.get_byte_immediate(); 2 },
+            0x3e => { self.reg.a = self.read_byte_immediate(); 2 },
             0x3f => {0},
 
             // 40
@@ -279,7 +284,7 @@ impl CPU {
             0x84 => { self.add(self.reg.h) },
             0x85 => { self.add(self.reg.l) },
             0x86 => { self.add(self.reg.a) },
-            0x87 => { self.add(self.get_byte_at_address(self.reg.get_hl())) },
+            0x87 => { self.add(self.read_byte_at_address(self.reg.get_hl())) },
 
             // 88
             0x88 => {0},
@@ -448,20 +453,29 @@ mod tests {
         cpu.memory[0x3] = 0x31;
         cpu.memory[0x4] = 0x47;
 
-        assert_eq!(cpu.get_byte_at_address(0x0), 0x34);
-        assert_eq!(cpu.get_byte_at_address(0x1), 0x11);
-        assert_eq!(cpu.get_byte_at_address(0x2), 0x24);
-        assert_eq!(cpu.get_byte_at_address(0x3), 0x31);
-        assert_eq!(cpu.get_byte_at_address(0x4), 0x47);
+        assert_eq!(cpu.read_byte_at_address(0x0), 0x34);
+        assert_eq!(cpu.read_byte_at_address(0x1), 0x11);
+        assert_eq!(cpu.read_byte_at_address(0x2), 0x24);
+        assert_eq!(cpu.read_byte_at_address(0x3), 0x31);
+        assert_eq!(cpu.read_byte_at_address(0x4), 0x47);
 
-        assert_eq!(cpu.get_bytes_at_address(0x0), 0x1134);
-        assert_eq!(cpu.get_bytes_at_address(0x1), 0x2411);
+        assert_eq!(cpu.read_word_at_address(0x0), 0x1134);
+        assert_eq!(cpu.read_word_at_address(0x1), 0x2411);
 
         cpu.reg.pc = 0x0;
-        assert_eq!(cpu.get_byte_immediate(), 0x11);
+        assert_eq!(cpu.read_byte_immediate(), 0x11);
         cpu.reg.pc += 0x1;
-        assert_eq!(cpu.get_byte_immediate(), 0x24);
-        assert_eq!(cpu.get_bytes_immediate(), 0x3124);
+        assert_eq!(cpu.read_byte_immediate(), 0x24);
+        assert_eq!(cpu.read_word_immediate(), 0x3124);
+    }
+
+    #[test]
+    fn test_write_word() {
+        let mut cpu = CPU::new();
+
+        cpu.write_word_to_memory(0, 0xAABB);
+        assert_eq!(cpu.memory[0], 0xBB);
+        assert_eq!(cpu.memory[1], 0xAA);
     }
 
     #[test]
