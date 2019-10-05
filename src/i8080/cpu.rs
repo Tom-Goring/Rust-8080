@@ -1121,7 +1121,6 @@ mod tests {
 
         for x in 0..8 {
             if cpu.memory[cpu.reg.pc] != 0x76 {
-                println!("x: {}", x);
                 cpu.tick();
                 assert_eq!(cpu.memory[cpu.reg.get_hl()], values[x]);
             } else {
