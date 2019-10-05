@@ -186,9 +186,9 @@ impl CPU {
             0x32 => { 
                 let address = self.read_word_immediate();
                 self.memory[address] = self.reg.a; 
-                3 
+                3
             },
-            0x33 => {0},
+            0x33 => { self.reg.sp += 1; 1 },
             0x34 => {
                 self.memory[self.reg.get_hl()] += 1;
                 self.set_zspac_flags_on_byte(self.memory[self.reg.get_hl()]); 
@@ -954,5 +954,13 @@ mod tests {
         cpu.reg.a = 0xFF;
         cpu.tick();
         assert_eq!(cpu.memory[0xAABB], 0xFF);
+    }
+
+    #[test]
+    fn test_inxsp() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x33;
+        cpu.tick();
+        assert_eq!(cpu.reg.sp, 1);
     }
 }
