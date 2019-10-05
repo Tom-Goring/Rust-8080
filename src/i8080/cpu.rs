@@ -1008,7 +1008,7 @@ mod tests {
         let mut cpu = CPU::new();
         let mut index = 0;
 
-        for x in 0x40..0x7F {
+        for x in 0x40..0x80 {
             cpu.memory[index] = x;
             index += 1;
         }
@@ -1127,5 +1127,20 @@ mod tests {
                 cpu.reg.pc += 1;
             }
         }
-    }   
+
+        cpu.reg.b = values[0];
+        cpu.reg.c = values[1];
+        cpu.reg.d = values[2];
+        cpu.reg.e = values[3];
+        cpu.reg.h = values[4];
+        cpu.reg.l = values[5];
+        cpu.memory[cpu.reg.get_hl()] = values[6];
+        cpu.reg.a = values[7];  
+
+        for x in 0..8 {
+            cpu.tick();
+            if x == 7 {cpu.reg.a = values[x]}
+            assert_eq!(cpu.reg.a, values[x]);
+        }
+    } 
 }
