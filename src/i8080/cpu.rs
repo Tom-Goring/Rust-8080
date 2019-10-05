@@ -178,7 +178,7 @@ impl CPU {
             0x2c => { self.reg.l += 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
             0x2d => { self.reg.l -= 1; self.set_zspac_flags_on_byte(self.reg.l); 1 },
             0x2e => { self.reg.l = self.read_byte_immediate(); 2 },
-            0x2f => {0},
+            0x2f => { self.reg.a = !self.reg.a; 1 },
 
             // 30
             0x30 => {0},
@@ -930,5 +930,14 @@ mod tests {
 
         assert_eq!(cpu.reg.l, 0xEE);
         assert_eq!(cpu.reg.h, 0xFF);
+    }
+
+    #[test]
+    fn test_cma() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x2f;
+        cpu.reg.a = 0b00000001;
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b11111110);
     }
 }
