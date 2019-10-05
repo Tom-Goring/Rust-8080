@@ -64,10 +64,39 @@ impl CPU {
         self.reg.set_flag(Flag::AC, word > 0xF);
     }
 
-    fn add(&mut self, reg: Byte) {
+    fn add(&mut self, reg: Byte) -> Word {
         let sum: u16 = self.reg.a as u16 + reg as u16;
         self.set_all_flags_on_word(sum);
         self.reg.a = sum as Byte;
+        1
+    }
+
+    fn rlc(&mut self) -> Word {
+        self.reg.set_flag(Flag::C, self.reg.a >> 7 != 0);
+        self.reg.a = self.reg.a << 1 | self.reg.a >> 7;
+        1
+    }
+
+    fn rrc(&mut self) -> Word {
+        self.reg.set_flag(Flag::C, self.reg.a << 7 != 0);
+        self.reg.a = self.reg.a << 7 | self.reg.a >> 1;
+        1
+    }
+
+    fn ral(&mut self) -> Word {
+        let set_flag = self.reg.a >> 7 != 0;
+        self.reg.a = self.reg.a << 1;
+        if self.reg.get_flag(Flag::C) { self.reg.a |= 0b00000001; }
+        self.reg.set_flag(Flag::C, set_flag);
+        1
+    }
+
+    fn rar(&mut self) -> Word {
+        let set_flag = self.reg.a << 7 != 0;
+        self.reg.a = self.reg.a >> 1;
+        if self.reg.get_flag(Flag::C) { self.reg.a |= 0b10000000; }
+        self.reg.set_flag(Flag::C, set_flag);
+        1
     }
 }
 
@@ -82,11 +111,7 @@ impl CPU {
             0x04 => { self.reg.b += 1; self.set_zspac_flags_on_byte(self.reg.b); 1 },
             0x05 => { self.reg.b -= 1; self.set_zspac_flags_on_byte(self.reg.b); 1 },
             0x06 => { self.reg.b = self.get_byte_immediate(); 2 },
-            0x07 => {
-                self.reg.set_flag(Flag::C, self.reg.a >> 7 != 0);
-                self.reg.a = self.reg.a << 1 | self.reg.a >> 7;
-                1
-            },
+            0x07 => { self.rlc() },
 
             // 08
             0x08 => { println!("NOP"); 1 },
@@ -96,34 +121,30 @@ impl CPU {
             0x0c => { self.reg.c += 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
             0x0d => { self.reg.c -= 1; self.set_zspac_flags_on_byte(self.reg.c); 1 },
             0x0e => { self.reg.c = self.get_byte_immediate(); 2 },
-            0x0f => {
-                self.reg.set_flag(Flag::C, self.reg.a << 7 != 0);
-                self.reg.a = self.reg.a << 7 | self.reg.a >> 1;
-                1
-            },
+            0x0f => { self.rrc() },
 
             // 10
-            0x10 => {0},
+            0x10 => { println!("NOP"); 1 },
             0x11 => { self.reg.set_de(self.get_bytes_immediate()); 3 },
             0x12 => { self.memory[self.reg.get_de()] = self.reg.a; 1 },
             0x13 => { self.reg.set_de(self.reg.get_de() + 1);      1 },
             0x14 => { self.reg.d += 1; self.set_zspac_flags_on_byte(self.reg.d); 1 },
             0x15 => { self.reg.d -= 1; self.set_zspac_flags_on_byte(self.reg.d); 1 },
             0x16 => { self.reg.d = self.get_byte_immediate(); 2 },
-            0x17 => {0},
+            0x17 => { self.ral() },
 
             // 18
-            0x18 => {0},
+            0x18 => { println!("NOP"); 1 },
             0x19 => { self.reg.set_hl(self.reg.get_hl() + self.reg.get_de()); 1 },
             0x1a => { self.reg.a = self.memory[self.reg.get_de()]; 1 },
             0x1b => { self.reg.set_de(self.reg.get_de() - 1); 1 },
             0x1c => { self.reg.e += 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
             0x1d => { self.reg.e -= 1; self.set_zspac_flags_on_byte(self.reg.e); 1 },
             0x1e => { self.reg.e = self.get_byte_immediate(); 2 },
-            0x1f => {0},
+            0x1f => { self.rar() },
 
             // 20
-            0x20 => {0},
+            0x20 => { println!("NOP"); 1 },
             0x21 => { self.reg.set_hl(self.get_bytes_immediate()); 3 },
             0x22 => {0},
             0x23 => { self.reg.set_hl(self.reg.get_hl() + 1);      1 },
@@ -251,14 +272,14 @@ impl CPU {
             0x7f => {0},
 
             // 80
-            0x80 => { self.add(self.reg.b); 1 },
-            0x81 => { self.add(self.reg.c); 1 },
-            0x82 => { self.add(self.reg.d); 1 },
-            0x83 => { self.add(self.reg.e); 1 },
-            0x84 => { self.add(self.reg.h); 1 },
-            0x85 => { self.add(self.reg.l); 1 },
-            0x86 => { self.add(self.reg.a); 1 },
-            0x87 => { self.add(self.get_byte_at_address(self.reg.get_hl())); 1 },
+            0x80 => { self.add(self.reg.b) },
+            0x81 => { self.add(self.reg.c) },
+            0x82 => { self.add(self.reg.d) },
+            0x83 => { self.add(self.reg.e) },
+            0x84 => { self.add(self.reg.h) },
+            0x85 => { self.add(self.reg.l) },
+            0x86 => { self.add(self.reg.a) },
+            0x87 => { self.add(self.get_byte_at_address(self.reg.get_hl())) },
 
             // 88
             0x88 => {0},
@@ -731,29 +752,6 @@ mod tests {
     }
 
     #[test]
-    fn test_rcl() {
-        let mut cpu = CPU::new();
-        cpu.memory[0] = 0x07;
-        cpu.reg.a = 0b00000001;
-
-        cpu.tick();
-        assert_eq!(cpu.reg.a, 0b00000010);
-
-        cpu.reg.pc = 0;
-        cpu.reg.a = 0b10000000;
-        cpu.tick();
-
-        assert_eq!(cpu.reg.a, 0b00000001);
-        assert_eq!(cpu.reg.get_flag(Flag::C), true);
-
-        cpu.reg.pc = 0;
-        cpu.reg.a = 0b00000001;
-        cpu.tick();
-        assert_eq!(cpu.reg.a, 0b00000010);
-        assert_eq!(cpu.reg.get_flag(Flag::C), false);
-    }
-
-    #[test]
     fn test_dad() {
         let mut cpu = CPU::new();
         cpu.memory[0] = 0x9;
@@ -812,20 +810,68 @@ mod tests {
     }
 
     #[test]
-    fn test_rrc() {
+    fn test_rlc() {
         let mut cpu = CPU::new();
-        cpu.memory[0] = 0x0F;
-        cpu.reg.a = 0b00000001;
+        cpu.memory[0] = 0x07;
+        cpu.reg.a = 0b10101010;
 
         cpu.tick();
-        assert_eq!(cpu.reg.a, 0b10000000);
+        assert_eq!(cpu.reg.a, 0b01010101);
         assert_eq!(cpu.reg.get_flag(Flag::C), true);
 
         cpu.reg.pc = 0;
-        cpu.reg.a = 0b10000000;
         cpu.tick();
 
-        assert_eq!(cpu.reg.a, 0b01000000);
+        assert_eq!(cpu.reg.a, 0b10101010);
         assert_eq!(cpu.reg.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_rrc() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x0F;
+        cpu.reg.a = 0b10000001;
+
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b11000000);
+        assert_eq!(cpu.reg.get_flag(Flag::C), true);
+
+        cpu.reg.pc = 0;
+        cpu.tick();
+        cpu.reg.a = 0b01100000;
+         assert_eq!(cpu.reg.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_ral() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x17;
+        cpu.reg.a = 0b10101010;
+
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b01010100);
+        assert_eq!(cpu.reg.get_flag(Flag::C), true);
+
+        cpu.reg.pc = 0;
+        cpu.tick();
+
+        assert_eq!(cpu.reg.a, 0b10101001);
+        assert_eq!(cpu.reg.get_flag(Flag::C), false);
+    }
+
+    #[test]
+    fn test_rar() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x1F;
+        cpu.reg.a = 0b10000001;
+
+        cpu.tick();
+        assert_eq!(cpu.reg.a, 0b01000000);
+        assert_eq!(cpu.reg.get_flag(Flag::C), true);
+
+        cpu.reg.pc = 0;
+        cpu.tick();
+
+        assert_eq!(cpu.reg.a, 0b10100000);
     }
 }
