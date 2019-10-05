@@ -200,7 +200,7 @@ impl CPU {
                 1
             },
             0x36 => { self.memory[self.reg.get_hl()] = self.read_byte_immediate(); 2 },
-            0x37 => {0},
+            0x37 => { self.reg.set_flag(Flag::C, true); 1 },
 
             // 38
             0x38 => {0},
@@ -962,5 +962,13 @@ mod tests {
         cpu.memory[0] = 0x33;
         cpu.tick();
         assert_eq!(cpu.reg.sp, 1);
+    }
+
+    #[test]
+    fn test_stc() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x37;
+        cpu.tick();
+        assert_eq!(cpu.reg.get_flag(Flag::C), true);
     }
 }
