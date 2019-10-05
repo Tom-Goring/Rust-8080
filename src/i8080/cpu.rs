@@ -181,9 +181,13 @@ impl CPU {
             0x2f => { self.reg.a = !self.reg.a; 1 },
 
             // 30
-            0x30 => {0},
+            0x30 => { println!("NOP"); 1 },
             0x31 => { self.reg.sp = self.read_word_immediate(); 3 },
-            0x32 => {0},
+            0x32 => { 
+                let address = self.read_word_immediate();
+                self.memory[address] = self.reg.a; 
+                3 
+            },
             0x33 => {0},
             0x34 => {
                 self.memory[self.reg.get_hl()] += 1;
@@ -939,5 +943,16 @@ mod tests {
         cpu.reg.a = 0b00000001;
         cpu.tick();
         assert_eq!(cpu.reg.a, 0b11111110);
+    }
+
+    #[test]
+    fn test_sta() {
+        let mut cpu = CPU::new();
+        cpu.memory[0] = 0x32;
+        cpu.memory[1] = 0xBB;
+        cpu.memory[2] = 0xAA;
+        cpu.reg.a = 0xFF;
+        cpu.tick();
+        assert_eq!(cpu.memory[0xAABB], 0xFF);
     }
 }
