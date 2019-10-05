@@ -203,8 +203,8 @@ impl CPU {
             0x37 => { self.reg.set_flag(Flag::C, true); 1 },
 
             // 38
-            0x38 => {0},
-            0x39 => {0},
+            0x38 => { println!("NOP"); 1 },
+            0x39 => { self.reg.set_hl(self.reg.get_hl() + self.reg.sp); 1 },
             0x3a => {0},
             0x3b => { self.reg.sp -= 1; 1 },
             0x3c => { self.reg.a += 1; self.set_zspac_flags_on_byte(self.reg.a); 1 },
@@ -795,6 +795,11 @@ mod tests {
         cpu.tick();
 
         assert_eq!(cpu.reg.get_hl(), 0x6);
+
+        cpu.memory[3] = 0x39;
+        cpu.reg.sp = 1;
+        cpu.tick();
+        assert_eq!(cpu.reg.get_hl(), 0x7);
     }
 
     #[test]
