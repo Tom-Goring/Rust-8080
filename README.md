@@ -13,9 +13,10 @@ Clone the repository, and then from the repo directory run ```cargo run```
 To run the tests, run ```cargo test```
 
 ## TODO: 
-- Next up: INR, DCR, MVI
-- Possibly extend add test to encompass more scenarios
-- Complete other opcodes
+- Finish opcodes
+- Add output drivers
+- WebAssembly?
+- Fix tests that aren't properly implemented (especially the mov tests, which can be expanded after the refactor)
 
 ## Resources:
 
