@@ -10,7 +10,7 @@ use crate::disassembler::disassemble_8080_op;
 use super::register::Reg8;
 use super::register::Reg16;
 use super::register::Reg8::{A, B, C, D, E, H, L, M};
-use super::register::Reg16::{BC, DE, HL, SP};
+use super::register::Reg16::{BC, DE, HL, SP, PSW};
 use super::register::Flag::{Carry, Parity, Sign, AuxCarry, Zero};
 
 pub struct CPU {
@@ -250,15 +250,15 @@ impl CPU {
     }
 
     fn rrc(&mut self) -> Word {
-        self.reg.set_flag(Carry, self.reg.a << 7 != 0);
-        self.reg.a = self.reg[A] << 7 | self.reg[A] >> 1;
+        self.reg.set_flag(Carry, self.reg[A] << 7 != 0);
+        self.reg[A] = self.reg[A] << 7 | self.reg[A] >> 1;
         1
     }
 
     fn ral(&mut self) -> Word {
         let set_flag = self.reg[A] >> 7 != 0;
-        self.reg.a = self.reg.a << 1;
-        if self.reg.get_flag(Carry) { self.reg.a |= 0b00000001; }
+        self.reg[A] = self.reg[A] << 1;
+        if self.reg.get_flag(Carry) { self.reg[A] |= 0b00000001; }
         self.reg.set_flag(Carry, set_flag);
         1
     }
@@ -268,6 +268,23 @@ impl CPU {
         self.reg[A] = self.reg[A] >> 1;
         if self.reg.get_flag(Carry) { self.reg[A] |= 0b10000000; }
         self.reg.set_flag(Carry, set_flag);
+        1
+    }
+
+    fn ret(&mut self) -> Word {
+        
+        1
+    }
+
+    fn pop(&mut self, x: Reg16) -> Word {
+        self.reg[x] = self.read_word_at_address(self.reg[SP]);
+        self.reg[SP] += 2;
+        1
+    }
+
+    fn push(&mut self, x: Reg16) -> Word {
+        self.reg[SP] -= 2;
+        self.write_word_to_memory(self.reg[SP], self.reg[x]);
         1
     }
 }
@@ -443,7 +460,7 @@ impl CPU {
             0x84 => { self.add(self.reg[H]) },
             0x85 => { self.add(self.reg[L]) },
             0x86 => { self.add(self.read_byte_at_address(self.reg[HL])) },
-            0x87 => { self.add(self.reg.a) },
+            0x87 => { self.add(self.reg[A]) },
 
             // 88
             0x88 => { self.adc(self.reg[B]) },
@@ -453,7 +470,7 @@ impl CPU {
             0x8c => { self.adc(self.reg[H]) },
             0x8d => { self.adc(self.reg[L]) },
             0x8e => { self.adc(self.read_byte_at_address(self.reg[HL])) },
-            0x8f => { self.adc(self.reg.a) },
+            0x8f => { self.adc(self.reg[A]) },
 
             // 90
             0x90 => { self.sub(self.reg[B]) },
@@ -463,7 +480,7 @@ impl CPU {
             0x94 => { self.sub(self.reg[H]) },
             0x95 => { self.sub(self.reg[L]) },
             0x96 => { self.sub(self.read_byte_at_address(self.reg[HL])) },
-            0x97 => { self.sub(self.reg.a) },
+            0x97 => { self.sub(self.reg[A]) },
 
             // 98
             0x98 => { self.sbb(self.reg[B]) },
@@ -473,7 +490,7 @@ impl CPU {
             0x9c => { self.sbb(self.reg[H]) },
             0x9d => { self.sbb(self.reg[L]) },
             0x9e => { self.sbb(self.read_byte_at_address(self.reg[HL])) },
-            0x9f => { self.sbb(self.reg.a) },
+            0x9f => { self.sbb(self.reg[A]) },
 
             // a0
             0xa0 => { self.ana(self.reg[B]) },
@@ -483,7 +500,7 @@ impl CPU {
             0xa4 => { self.ana(self.reg[H]) },
             0xa5 => { self.ana(self.reg[L]) },
             0xa6 => { self.ana(self.read_byte_at_address(self.reg[HL])) },
-            0xa7 => { self.ana(self.reg.a) },
+            0xa7 => { self.ana(self.reg[A]) },
 
             // a8
             0xa8 => { self.xra(self.reg[B]) },
@@ -493,7 +510,7 @@ impl CPU {
             0xac => { self.xra(self.reg[H]) },
             0xad => { self.xra(self.reg[L]) },
             0xae => { self.xra(self.read_byte_at_address(self.reg[HL])) },
-            0xaf => { self.xra(self.reg.a) },
+            0xaf => { self.xra(self.reg[A]) },
 
             // b0
             0xb0 => { self.ora(self.reg[B]) },
@@ -503,7 +520,7 @@ impl CPU {
             0xb4 => { self.ora(self.reg[H]) },
             0xb5 => { self.ora(self.reg[L]) },
             0xb6 => { self.ora(self.read_byte_at_address(self.reg[HL])) },
-            0xb7 => { self.ora(self.reg.a) },
+            0xb7 => { self.ora(self.reg[A]) },
 
             // b8
             0xb8 => { self.cmp(self.reg[B]) },
@@ -513,15 +530,15 @@ impl CPU {
             0xbc => { self.cmp(self.reg[H]) },
             0xbd => { self.cmp(self.reg[L]) },
             0xbe => { self.cmp(self.read_byte_at_address(self.reg[HL])) },
-            0xbf => { self.cmp(self.reg.a) },
+            0xbf => { self.cmp(self.reg[A]) },
 
             // c0
             0xc0 => {0}, // If not 0 RET
-            0xc1 => {0}, // POP B
+            0xc1 => { self.pop(BC) }, // POP B
             0xc2 => {0}, // JNZ addr
             0xc3 => {0}, // JMP addr
             0xc4 => {0}, // if NZ CALL addr
-            0xc5 => {0}, // PUSH B
+            0xc5 => { self.push(BC) }, // PUSH B
             0xc6 => {0}, // ADI (add immediate to acc)
             0xc7 => {0}, // CALL $0 (??)
 
@@ -537,11 +554,11 @@ impl CPU {
 
             // d0
             0xd0 => {0}, // if !C RET
-            0xd1 => {0}, // POP D
+            0xd1 => { self.pop(DE) }, // POP D
             0xd2 => {0}, // JNC addr
             0xd3 => {0}, // OUT (??)
             0xd4 => {0}, // if !C CALL addr
-            0xd5 => {0}, // PUSH D
+            0xd5 => { self.push(DE) }, // PUSH D
             0xd6 => {0}, // subtract immediate byte from acc & set all flags
             0xd7 => {0}, // CALL $10
 
@@ -557,11 +574,11 @@ impl CPU {
 
             // e0
             0xe0 => {0}, // if PO RET
-            0xe1 => {0}, // POP H
+            0xe1 => { self.pop(HL) }, // POP H
             0xe2 => {0}, // JPO addr
             0xe3 => {0}, // XTHL
             0xe4 => {0}, // if PO call addr
-            0xe5 => {0}, // PUSH H
+            0xe5 => { self.push(HL) }, // PUSH H
             0xe6 => {0}, // bitwise AND acc with immediate byte & set flags
             0xe7 => {0}, // CALL $20
 
@@ -577,11 +594,11 @@ impl CPU {
 
             // f0
             0xf0 => {0}, // if P RET
-            0xf1 => {0}, // POP psw
+            0xf1 => { self.pop(PSW) }, // POP psw
             0xf2 => {0}, // if P jmp addr
             0xf3 => {0}, // DI (??)
             0xf4 => {0}, // if P jmp addr
-            0xf5 => {0}, // PUSH PSW
+            0xf5 => { self.push(PSW) }, // PUSH PSW
             0xf6 => {0}, // bitwise OR immediate byte with acc and set flags
             0xf7 => {0}, // CALL $30
 

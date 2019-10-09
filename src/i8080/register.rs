@@ -22,6 +22,7 @@ pub enum Reg16 {
     HL,
     SP,
     PC,
+    PSW,
 }
 
 #[derive(Copy, Clone)]
@@ -33,7 +34,7 @@ pub enum Flag {
     Zero = 0b01000000,
 }
 
-use Reg16::{BC, DE, HL, PC, SP};
+use Reg16::{BC, DE, HL, PC, SP, PSW};
 use Reg8::{A, B, C, D, E, F, H, L, M};
 
 pub union RegisterPair {
@@ -42,37 +43,37 @@ pub union RegisterPair {
 }
 
 pub struct Register {
-    pub a: Byte,
+    pub psw: RegisterPair,
     pub bc: RegisterPair,
     pub de: RegisterPair,
     pub hl: RegisterPair,
     pub sp: Word,
     pub pc: Word,
-    pub f: Byte,
 }
 
 impl Register {
     pub fn new() -> Self {
         Register {
-            a: 0,
+            psw: RegisterPair { word: 0},
             bc: RegisterPair { word: 0 },
             de: RegisterPair { word: 0 },
             hl: RegisterPair { word: 0 },
             sp: 0,
             pc: 0,
-            f: 0,
         }
     }
 
     pub fn get_flag(&self, flag: Flag) -> bool {
-        (self.f & flag as Byte) == flag as Byte
+        unsafe {
+            (self.psw.bytes.0 & flag as Byte) == flag as Byte
+        }
     }
 
     pub fn set_flag(&mut self, flag: Flag, set: bool) {
         if set {
-            self.f |= flag as Byte;
+            self[F] |= flag as Byte;
         } else {
-            self.f &= !(flag as Byte);
+            self[F] &= !(flag as Byte);
         }
     }
 }
@@ -82,14 +83,14 @@ impl Index<Reg8> for Register {
     fn index(&self, register: Reg8) -> &Self::Output {
         unsafe {
             match register {
-                A => &self.a,
+                A => &self.psw.bytes.1,
                 B => &self.bc.bytes.1,
                 C => &self.bc.bytes.0,
                 D => &self.de.bytes.1,
                 E => &self.de.bytes.0,
                 H => &self.hl.bytes.1,
                 L => &self.hl.bytes.0,
-                F => &self.f,
+                F => &self.psw.bytes.0,
                 M => panic!("Cannot access memory through use of fake `M` register!"),
             }
         }
@@ -100,14 +101,14 @@ impl IndexMut<Reg8> for Register {
     fn index_mut(&mut self, register: Reg8) -> &mut Byte {
         unsafe {
             match register {
-                A => &mut self.a,
+                A => &mut self.psw.bytes.1,
                 B => &mut self.bc.bytes.1,
                 C => &mut self.bc.bytes.0,
                 D => &mut self.de.bytes.1,
                 E => &mut self.de.bytes.0,
                 H => &mut self.hl.bytes.1,
                 L => &mut self.hl.bytes.0,
-                F => &mut self.f,
+                F => &mut self.psw.bytes.0,
                 M => panic!("Cannot access memory through use of fake `M` register!"),
             }
         }
@@ -124,6 +125,7 @@ impl Index<Reg16> for Register {
                 HL => &self.hl.word,
                 PC => &self.pc,
                 SP => &self.sp,
+                PSW => &self.psw.word,
             }
         }
     }
@@ -138,6 +140,7 @@ impl IndexMut<Reg16> for Register {
                 HL => &mut self.hl.word,
                 PC => &mut self.pc,
                 SP => &mut self.sp,
+                PSW => &mut self.psw.word,
             }
         }
     }
@@ -187,7 +190,7 @@ mod tests {
         assert_eq!(reg.get_flag(Flag::Carry), true);
 
         reg.set_flag(Flag::Sign, true);
-        assert_eq!(reg.f, 0b10000001);
+        assert_eq!(reg[F], 0b10000001);
         assert_eq!(reg.get_flag(Flag::Sign), true);
 
         reg.set_flag(Flag::Carry, false);
@@ -202,18 +205,18 @@ mod tests {
 
         reg.set_flag(Flag::Carry, true);
 
-        assert_eq!(reg.f, Flag::Carry as Byte);
+        assert_eq!(reg[F], Flag::Carry as Byte);
 
         reg.set_flag(Flag::Carry, false);
 
-        assert_eq!(reg.f, 0b00000000);
+        assert_eq!(reg[F], 0b00000000);
 
         reg.set_flag(Flag::Sign, true);
 
-        assert_eq!(reg.f, Flag::Sign as Byte);
+        assert_eq!(reg[F], Flag::Sign as Byte);
 
         reg.set_flag(Flag::Sign, false);
 
-        assert_eq!(reg.f, 0b00000000);
+        assert_eq!(reg[F], 0b00000000);
     }
 }
