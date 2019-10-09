@@ -516,84 +516,84 @@ impl CPU {
             0xbf => { self.cmp(self.reg.a) },
 
             // c0
-            0xc0 => {0},
-            0xc1 => {0},
-            0xc2 => {0},
-            0xc3 => {0},
-            0xc4 => {0},
-            0xc5 => {0},
-            0xc6 => {0},
-            0xc7 => {0},
+            0xc0 => {0}, // If not 0 RET
+            0xc1 => {0}, // POP B
+            0xc2 => {0}, // JNZ addr
+            0xc3 => {0}, // JMP addr
+            0xc4 => {0}, // if NZ CALL addr
+            0xc5 => {0}, // PUSH B
+            0xc6 => {0}, // ADI (add immediate to acc)
+            0xc7 => {0}, // CALL $0 (??)
 
             // c8
-            0xc8 => {0},
-            0xc9 => {0},
-            0xca => {0},
-            0xcb => {0},
-            0xcc => {0},
-            0xcd => {0},
-            0xce => {0},
-            0xcf => {0},
+            0xc8 => {0}, // If Z RET
+            0xc9 => {0}, // RET
+            0xca => {0}, // JZ addr
+            0xcb => {0}, // NOP
+            0xcc => {0}, // if Z CALL addr
+            0xcd => {0}, // CALL addr
+            0xce => {0}, // ACI (add immediate byte & carry to acc)
+            0xcf => {0}, // CALL $8
 
             // d0
-            0xd0 => {0},
-            0xd1 => {0},
-            0xd2 => {0},
-            0xd3 => {0},
-            0xd4 => {0},
-            0xd5 => {0},
-            0xd6 => {0},
-            0xd7 => {0},
+            0xd0 => {0}, // if !C RET
+            0xd1 => {0}, // POP D
+            0xd2 => {0}, // JNC addr
+            0xd3 => {0}, // OUT (??)
+            0xd4 => {0}, // if !C CALL addr
+            0xd5 => {0}, // PUSH D
+            0xd6 => {0}, // subtract immediate byte from acc & set all flags
+            0xd7 => {0}, // CALL $10
 
             // d8
-            0xd8 => {0},
-            0xd9 => {0},
-            0xda => {0},
-            0xdb => {0},
-            0xdc => {0},
-            0xdd => {0},
-            0xde => {0},
-            0xdf => {0},
+            0xd8 => {0}, // if C RET
+            0xd9 => {0}, // NOP
+            0xda => {0}, // if C jmp addr
+            0xdb => {0}, // IN (??)
+            0xdc => {0}, // if C CALL addr
+            0xdd => {0}, // NOP
+            0xde => {0}, // sutract immediate byte & carry from acc & set all flags
+            0xdf => {0}, // CALL $18 (??)
 
             // e0
-            0xe0 => {0},
-            0xe1 => {0},
-            0xe2 => {0},
-            0xe3 => {0},
-            0xe4 => {0},
-            0xe5 => {0},
-            0xe6 => {0},
-            0xe7 => {0},
+            0xe0 => {0}, // if PO RET
+            0xe1 => {0}, // POP H
+            0xe2 => {0}, // JPO addr
+            0xe3 => {0}, // XTHL
+            0xe4 => {0}, // if PO call addr
+            0xe5 => {0}, // PUSH H
+            0xe6 => {0}, // bitwise AND acc with immediate byte & set flags
+            0xe7 => {0}, // CALL $20
 
             // e8
-            0xe8 => {0},
-            0xe9 => {0},
-            0xea => {0},
-            0xeb => {0},
-            0xec => {0},
-            0xed => {0},
-            0xee => {0},
-            0xef => {0},
+            0xe8 => {0}, // if PE RET
+            0xe9 => {0}, // PCHL
+            0xea => {0}, // if PE move immediate word to PC
+            0xeb => {0}, // XCHG
+            0xec => {0}, // if PE call addr
+            0xed => {0}, // NOP
+            0xee => {0}, // bitwise XOR immediate byte with acc and set flags
+            0xef => {0}, // CALL $28
 
             // f0
-            0xf0 => {0},
-            0xf1 => {0},
-            0xf2 => {0},
-            0xf3 => {0},
-            0xf4 => {0},
-            0xf5 => {0},
-            0xf6 => {0},
-            0xf7 => {0},
+            0xf0 => {0}, // if P RET
+            0xf1 => {0}, // POP psw
+            0xf2 => {0}, // if P jmp addr
+            0xf3 => {0}, // DI (??)
+            0xf4 => {0}, // if P jmp addr
+            0xf5 => {0}, // PUSH PSW
+            0xf6 => {0}, // bitwise OR immediate byte with acc and set flags
+            0xf7 => {0}, // CALL $30
 
             // f8
-            0xf8 => {0},
-            0xf9 => {0},
-            0xfa => {0},
-            0xfb => {0},
-            0xfc => {0},
-            0xfd => {0},
-            0xff => {0},
-            0xfe => {0},
+            0xf8 => {0}, // if M, RET
+            0xf9 => {0}, // SPHL
+            0xfa => {0}, // if M jmp addr
+            0xfb => {0}, // EI (??)
+            0xfc => {0}, // if M call addr
+            0xfd => {0}, // NOP
+            0xfe => {0}, // compare acc to immediate byte & set vlags
+            0xff => {0}, // CALL $38
         }
     }
 }
