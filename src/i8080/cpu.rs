@@ -1317,4 +1317,51 @@ mod tests {
 
         assert_eq!(cpu.reg[A], 0);
     }
+
+    #[test]
+    fn test_ana() {
+        let registers = [A, B, C, D, E, H, L];
+
+        let values = [
+            0b11111111, // Initial
+            0b11111110, // B
+            0b11111100, // C
+            0b11111000, // D
+            0b11110000, // E
+            0b11100000, // H
+            0b11000000, // L
+            0b10000000, // M
+        ];
+
+        let mut cpu = CPU::new();
+        let mut index = 0;
+        
+        for x in 0xa0..0xa8 {
+            cpu.memory[index] = x;
+            index += 1;
+        }
+
+        for x in 0..7 {
+            cpu.reg[registers[x]] = values[x];
+        }
+
+        index = 1;
+        for x in 0xa0..0xa8 {
+            if x == 0xa6 {
+                cpu.reg[HL] = 0xDDDD;
+                cpu.memory[cpu.reg[HL]] = 0b10000000;
+            }
+            
+            cpu.tick();
+            println!("{:08b}", cpu.reg[A]);
+
+            if x == 0xa6 {
+                assert_eq!(cpu.reg[A], 0b10000000);
+            }
+            else {
+                assert_eq!(cpu.reg[A], values[(index) as usize]);
+            }
+            if index != 7 {index += 1};
+        }
+    }
 }
