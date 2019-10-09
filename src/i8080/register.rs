@@ -2,7 +2,7 @@ use super::cpu::Byte;
 use super::cpu::Word;
 use std::ops::{Index, IndexMut};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Reg8 {
     A,
     B,
@@ -12,6 +12,7 @@ pub enum Reg8 {
     H,
     L,
     F,
+    M,
 }
 
 #[derive(Debug)]
@@ -33,7 +34,7 @@ pub enum Flag {
 }
 
 use Reg16::{BC, DE, HL, PC, SP};
-use Reg8::{A, B, C, D, E, F, H, L};
+use Reg8::{A, B, C, D, E, F, H, L, M};
 
 pub union RegisterPair {
     word: Word,
@@ -89,6 +90,7 @@ impl Index<Reg8> for Register {
                 H => &self.hl.bytes.1,
                 L => &self.hl.bytes.0,
                 F => &self.f,
+                M => panic!("Cannot access memory through use of fake `M` register!"),
             }
         }
     }
@@ -106,6 +108,7 @@ impl IndexMut<Reg8> for Register {
                 H => &mut self.hl.bytes.1,
                 L => &mut self.hl.bytes.0,
                 F => &mut self.f,
+                M => panic!("Cannot access memory through use of fake `M` register!"),
             }
         }
     }

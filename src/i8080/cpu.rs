@@ -9,7 +9,7 @@ use crate::disassembler::disassemble_8080_op;
 
 use super::register::Reg8;
 use super::register::Reg16;
-use super::register::Reg8::{A, B, C, D, E, H, L};
+use super::register::Reg8::{A, B, C, D, E, H, L, M};
 use super::register::Reg16::{BC, DE, HL, SP};
 use super::register::Flag::{Carry, Parity, Sign, AuxCarry, Zero};
 
@@ -178,17 +178,14 @@ impl CPU {
     }
 
     fn mov(&mut self, dest: Reg8, src: Reg8) -> Word {
-        self.reg[dest] = self.reg[src];
-        1
-    }
-
-    fn mov_mx(&mut self, dest: Reg8) -> Word{
-        self.reg[dest] = self.memory[self.reg[HL]];
-        1
-    }
-
-    fn mov_xm(&mut self, src: Reg8) -> Word {
-        self.memory[self.reg[HL]] = self.reg[src];
+        if dest == M {
+            self.memory[self.reg[HL]] = self.reg[src];
+        } else if src == M {
+            self.reg[dest] = self.memory[self.reg[HL]];
+        } else {
+            self.reg[dest] = self.reg[src];
+            println!("Moving reg[{:?}] of value {} to reg[{:?}]", src, self.reg[src], dest);
+        }
         1
     }
 
@@ -365,7 +362,7 @@ impl CPU {
             0x43 => { self.mov(B, E) },
             0x44 => { self.mov(B, H) },
             0x45 => { self.mov(B, L) },
-            0x46 => { self.mov_mx(B) },
+            0x46 => { self.mov(B, M) },
             0x47 => { self.mov(B, A) },
 
             // 48
@@ -375,7 +372,7 @@ impl CPU {
             0x4b => { self.mov(C, E) },
             0x4c => { self.mov(C, H) },
             0x4d => { self.mov(C, L) },
-            0x4e => { self.mov_mx(C) },
+            0x4e => { self.mov(C, M) },
             0x4f => { self.mov(C, A) },
 
             // 50
@@ -385,7 +382,7 @@ impl CPU {
             0x53 => { self.mov(D, E) },
             0x54 => { self.mov(D, H) },
             0x55 => { self.mov(D, L) },
-            0x56 => { self.mov_mx(D) },
+            0x56 => { self.mov(D, M) },
             0x57 => { self.mov(D, A) },
 
             // 58
@@ -395,7 +392,7 @@ impl CPU {
             0x5b => { self.mov(E, E) },
             0x5c => { self.mov(E, H) },
             0x5d => { self.mov(E, L) },
-            0x5e => { self.mov_mx(E) },
+            0x5e => { self.mov(E, M) },
             0x5f => { self.mov(E, A) },
 
             // 60
@@ -405,7 +402,7 @@ impl CPU {
             0x63 => { self.mov(H, E) },
             0x64 => { self.mov(H, H) },
             0x65 => { self.mov(H, L) },
-            0x66 => { self.mov_mx(H) },
+            0x66 => { self.mov(H, M) },
             0x67 => { self.mov(H, A) },
 
             // 68
@@ -415,18 +412,18 @@ impl CPU {
             0x6b => { self.mov(L, E) },
             0x6c => { self.mov(L, H) },
             0x6d => { self.mov(L, L) },
-            0x6e => { self.mov_mx(L) },
+            0x6e => { self.mov(L, M) },
             0x6f => { self.mov(L, A) },
 
             // 70
-            0x70 => { self.mov_xm(B) },
-            0x71 => { self.mov_xm(C) },
-            0x72 => { self.mov_xm(D) },
-            0x73 => { self.mov_xm(E) },
-            0x74 => { self.mov_xm(H) },
-            0x75 => { self.mov_xm(L) },
-            0x76 => {0}, // TODO: Add halt 
-            0x77 => { self.mov_xm(A) },
+            0x70 => { self.mov(M, B) },
+            0x71 => { self.mov(M, C) },
+            0x72 => { self.mov(M, D) },
+            0x73 => { self.mov(M, E) },
+            0x74 => { self.mov(M, H) },
+            0x75 => { self.mov(M, L) },
+            0x76 => {1}, // TODO: Add halt 
+            0x77 => { self.mov(M, A) },
 
             // 78
             0x78 => { self.mov(A, B) },
@@ -435,7 +432,7 @@ impl CPU {
             0x7b => { self.mov(A, E) },
             0x7c => { self.mov(A, H) },
             0x7d => { self.mov(A, L) },
-            0x7e => { self.mov_mx(A) },
+            0x7e => { self.mov(A, M) },
             0x7f => { self.mov(A, A) },
 
             // 80
@@ -1155,134 +1152,43 @@ mod tests {
             index += 1;
         }
 
-        let values = [2, 3, 4, 5, 6, 7, 8, 9];
+        let registers = [B, C, D, E, H, L, M, A];
 
-        cpu.reg[B] = values[0];
-        cpu.reg[C] = values[1];
-        cpu.reg[D] = values[2];
-        cpu.reg[E] = values[3];
-        cpu.reg[H] = values[4];
-        cpu.reg[L] = values[5];
-        cpu.memory[cpu.reg[HL]] = values[6];
-        cpu.reg[A] = values[7];
+        for &dest_register in registers.iter() {
+            for &source_register in registers.iter() {
+                // println!("Source: {:?}, Dest: {:?}", source_register, dest_register);
+                if source_register == M {
+                    cpu.reg[HL] = 0xFFFE;
+                    cpu.memory[cpu.reg[HL]] = 0x1;
+                    // println!("Setting memory at {:04X} to 1", cpu.reg[HL]);
+                }
+                if source_register != M {
+                    cpu.reg[source_register] = 0x1;
+                    // println!("Setting SR to 1");
+                    // println!("SR pre-tick: {:?}", cpu.reg[source_register]);
+                }
 
-        for x in 0..8 {
-            cpu.tick();
-            assert_eq!(cpu.reg[B], values[x]);
-        }
-
-        cpu.reg[B] = values[0];
-        cpu.reg[C] = values[1];
-        cpu.reg[D] = values[2];
-        cpu.reg[E] = values[3];
-        cpu.reg[H] = values[4];
-        cpu.reg[L] = values[5];
-        cpu.memory[cpu.reg[HL]] = values[6];
-        cpu.reg[A] = values[7];
-
-        for x in 0..8 {
-            cpu.tick();
-            if x == 1 {cpu.reg[C] = values[x]}
-            assert_eq!(cpu.reg[C], values[x]);
-        }
-
-        cpu.reg[B] = values[0];
-        cpu.reg[C] = values[1];
-        cpu.reg[D] = values[2];
-        cpu.reg[E] = values[3];
-        cpu.reg[H] = values[4];
-        cpu.reg[L] = values[5];
-        cpu.memory[cpu.reg[HL]] = values[6];
-        cpu.reg[A] = values[7];
-
-        for x in 0..8 {
-            cpu.tick();
-            if x == 2 {cpu.reg[D] = values[x]}
-            assert_eq!(cpu.reg[D], values[x]);
-        }
-
-        cpu.reg[B] = values[0];
-        cpu.reg[C] = values[1];
-        cpu.reg[D] = values[2];
-        cpu.reg[E] = values[3];
-        cpu.reg[H] = values[4];
-        cpu.reg[L] = values[5];
-        cpu.memory[cpu.reg[HL]] = values[6];
-        cpu.reg[A] = values[7];
-
-        for x in 0..8 {
-            cpu.tick();
-            if x == 3 {cpu.reg[E] = values[x]}
-            assert_eq!(cpu.reg[E], values[x]);
-        }
-
-        cpu.reg[B] = values[0];
-        cpu.reg[C] = values[1];
-        cpu.reg[D] = values[2];
-        cpu.reg[E] = values[3];
-        cpu.reg[H] = values[4];
-        cpu.reg[L] = values[5];
-        cpu.memory[cpu.reg[HL]] = values[6];
-        cpu.reg[A] = values[7];
-
-        for x in 0..8 {
-            
-            if x == 6 {
-                cpu.reg[H] = values[4];
-                cpu.reg[L] = values[5];
-                cpu.memory[cpu.reg[HL]] = values[6];
-            }
-            cpu.tick();
-            if x == 4 {cpu.reg[H] = values[x]};
-            assert_eq!(cpu.reg[H], values[x]);
-        }
-
-        cpu.reg[B] = values[0];
-        cpu.reg[C] = values[1];
-        cpu.reg[D] = values[2];
-        cpu.reg[E] = values[3];
-        cpu.reg[H] = values[4];
-        cpu.reg[L] = values[5];
-        cpu.memory[cpu.reg[HL]] = values[6];
-        cpu.reg[A] = values[7];
-
-        for x in 0..8 {
-            cpu.tick();
-            if x == 5 {cpu.reg[L] = values[x]}
-            assert_eq!(cpu.reg[L], values[x]);
-        }
-
-        cpu.reg[B] = values[0];
-        cpu.reg[C] = values[1];
-        cpu.reg[D] = values[2];
-        cpu.reg[E] = values[3];
-        cpu.reg[H] = values[4];
-        cpu.reg[L] = values[5];
-        cpu.memory[cpu.reg[HL]] = values[6];
-        cpu.reg[A] = values[7];
-
-        for x in 0..8 {
-            if cpu.memory[cpu.reg.pc] != 0x76 {
                 cpu.tick();
-                assert_eq!(cpu.memory[cpu.reg[HL]], values[x]);
-            } else {
-                cpu.reg.pc += 1;
+
+                if source_register != M && dest_register != M {
+                    if source_register == M {
+                    // println!("DR post-tick: {:?}", cpu.reg[dest_register]);
+                    // println!("M@HL({:04X}): {} vs V->{:?}: {}", cpu.reg[HL], cpu.memory[cpu.reg[HL]], dest_register, cpu.reg[dest_register]);
+                    assert_eq!(cpu.memory[0xFFFE], cpu.reg[dest_register]);
+                    } 
+                    else if dest_register == M {
+                        // println!("SR post-tick: {:?}", cpu.reg[source_register]);
+                        // println!("Memory at HL({:?}): {:04X}", cpu.reg[HL], cpu.memory[cpu.reg[HL]]);
+                        assert_eq!(cpu.memory[cpu.reg[HL]], cpu.reg[source_register]);
+                        
+                    } 
+                    else {
+                        // println!("DR post-tick: {:?}", cpu.reg[dest_register]);
+                        // println!("SR post-tick: {:?}", cpu.reg[source_register]);
+                        assert_eq!(cpu.reg[dest_register], cpu.reg[source_register]);
+                    }
+                }
             }
-        }
-
-        cpu.reg[B] = values[0];
-        cpu.reg[C] = values[1];
-        cpu.reg[D] = values[2];
-        cpu.reg[E] = values[3];
-        cpu.reg[H] = values[4];
-        cpu.reg[L] = values[5];
-        cpu.memory[cpu.reg[HL]] = values[6];
-        cpu.reg[A] = values[7];  
-
-        for x in 0..8 {
-            cpu.tick();
-            if x == 7 {cpu.reg[A] = values[x]}
-            assert_eq!(cpu.reg[A], values[x]);
         }
     }
 
