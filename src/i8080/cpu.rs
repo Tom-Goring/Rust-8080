@@ -148,6 +148,32 @@ impl CPU { // ARITHMETIC GROUP
         self.reg[A] = result;
         2
     }
+
+    fn aci(&mut self) -> Word {
+        let (mut result, overflow) = self.reg[A].overflowing_add(self.read_byte_immediate());
+        self.set_flags_on_result(result, overflow);
+        if self.reg.get_flag(Carry) {
+            result += 1;
+        }
+        self.reg[A] = result;
+        2
+    }
+
+    fn sui(&mut self) -> Word {
+        let (result, overflow) = self.reg[A].overflowing_sub(self.read_byte_immediate());
+        self.set_flags_on_result(result, overflow);
+        2
+    }
+
+    fn sbi(&mut self) -> Word {
+        let (mut result, overflow) = self.reg[A].overflowing_sub(self.read_byte_immediate());
+        self.set_flags_on_result(result, overflow);
+        if self.reg.get_flag(Carry) {
+            result -= 1;
+        }
+        self.reg[A] = result;
+        2
+    }
 }
 
 impl CPU { // LOGICAL GROUP
@@ -294,8 +320,71 @@ impl CPU { // BRANCH GROUP
         0
     }
 
+    fn cc(&mut self) -> Word {
+        if self.reg.get_flag(Carry) {
+            self.call()
+        }
+        else {
+            3
+        }
+    }
+
+    fn cnc(&mut self) -> Word {
+        if !self.reg.get_flag(Carry) {
+            self.call()
+        }
+        else {
+            3
+        }
+    }
+
+    fn cp(&mut self) -> Word {
+        if self.reg.get_flag(Sign) {
+            self.call()
+        }
+        else {
+            3
+        }
+    }
+
+    fn cm(&mut self) -> Word {
+        if !self.reg.get_flag(Sign) {
+            self.call()
+        }
+        else {
+            3
+        }
+    }
+
+    fn cz(&mut self) -> Word {
+        if self.reg.get_flag(Zero) {
+            self.call()
+        }
+        else {
+            3
+        }
+    }
+
     fn cnz(&mut self) -> Word {
         if !self.reg.get_flag(Zero) {
+            self.call()
+        }
+        else {
+            3
+        }
+    }
+
+    fn cpe(&mut self) -> Word {
+        if self.reg.get_flag(Parity) {
+            self.call()
+        }
+        else {
+            3
+        }
+    }
+
+    fn cpo(&mut self) -> Word {
+        if !self.reg.get_flag(Parity) {
             self.call()
         }
         else {
@@ -309,8 +398,35 @@ impl CPU { // BRANCH GROUP
         0
     }
 
-    fn rnz(&mut self) -> Word {
-        if !self.reg.get_flag(Zero) {
+    fn rc(&mut self) -> Word {
+        if self.reg.get_flag(Carry) {
+            self.ret()
+        }
+        else {
+            1
+        }
+    }  
+
+    fn rnc(&mut self) -> Word {
+        if !self.reg.get_flag(Carry) {
+            self.ret()
+        }
+        else {
+            1
+        }
+    }
+
+    fn rp(&mut self) -> Word {
+        if self.reg.get_flag(Sign) {
+            self.ret()
+        }
+        else {
+            1
+        }
+    }
+
+    fn rm(&mut self) -> Word {
+        if !self.reg.get_flag(Sign) {
             self.ret()
         }
         else {
@@ -320,6 +436,33 @@ impl CPU { // BRANCH GROUP
 
     fn rz(&mut self) -> Word {
         if self.reg.get_flag(Zero) {
+            self.ret()
+        }
+        else {
+            1
+        }
+    }
+
+    fn rnz(&mut self) -> Word {
+        if !self.reg.get_flag(Zero) {
+            self.ret()
+        }
+        else {
+            1
+        }
+    }
+
+    fn rpe(&mut self) -> Word {
+        if self.reg.get_flag(Parity) {
+            self.ret()
+        }
+        else {
+            1
+        }
+    }
+
+    fn rpo(&mut self) -> Word {
+        if !self.reg.get_flag(Parity) {
             self.ret()
         }
         else {
@@ -344,12 +487,48 @@ impl CPU { // BRANCH GROUP
         0
     }
 
+    fn jc(&mut self) -> Word {
+        if self.reg.get_flag(Carry) {
+            self.jmp()
+        }
+        else {
+            3
+        }
+    }
+
+    fn jnc(&mut self) -> Word {
+        if !self.reg.get_flag(Carry) {
+            self.jmp()
+        }
+        else {
+            3
+        }
+    }
+
+    fn jp(&mut self) -> Word {
+        if self.reg.get_flag(Sign) {
+            self.jmp()
+        }
+        else {
+            3
+        }
+    }
+
+    fn jm(&mut self) -> Word {
+        if !self.reg.get_flag(Sign) {
+            self.jmp()
+        }
+        else {
+            3
+        }
+    }
+
     fn jz(&mut self) -> Word {
         if self.reg.get_flag(Zero) {
             self.jmp()
         }
         else {
-            1
+            3
         }
     }
 
@@ -357,6 +536,24 @@ impl CPU { // BRANCH GROUP
         if !self.reg.get_flag(Zero) {
             self.jmp()
         } else {
+            3
+        }
+    }
+
+    fn jpe(&mut self) -> Word {
+        if self.reg.get_flag(Parity) {
+            self.jmp()
+        }
+        else {
+            3
+        }
+    }
+
+    fn jpo(&mut self) -> Word {
+        if !self.reg.get_flag(Parity) {
+            self.jmp()
+        }
+        else {
             3
         }
     }
@@ -626,70 +823,70 @@ impl CPU {
             0xc8 => { self.rz() }, // If Z RET
             0xc9 => { self.ret() }, // RET
             0xca => { self.jz() }, // JZ addr
-            0xcb => {0}, // NOP
-            0xcc => {0}, // if Z CALL addr
+            0xcb => {1}, // NOP
+            0xcc => { self.cz() }, // if Z CALL addr
             0xcd => { self.call() }, // CALL addr
-            0xce => {0}, // ACI (add immediate byte & carry to acc)
+            0xce => { self.aci() }, // ACI (add immediate byte & carry to acc)
             0xcf => { self.rst(0x8) }, // CALL $8
 
             // d0
-            0xd0 => {0}, // if !C RET
+            0xd0 => { self.rnc() }, // if !C RET
             0xd1 => { self.pop(DE) }, // POP D
-            0xd2 => {0}, // JNC addr
-            0xd3 => {0}, // OUT (??)
-            0xd4 => {0}, // if !C CALL addr
+            0xd2 => { self.jnc() }, // JNC addr
+            0xd3 => {1}, // OUT (??)
+            0xd4 => { self.cnc() }, // if !C CALL addr
             0xd5 => { self.push(DE) }, // PUSH D
-            0xd6 => {0}, // subtract immediate byte from acc & set all flags
+            0xd6 => { self.sui() }, // subtract immediate byte from acc & set all flags
             0xd7 => { self.rst(0x10) }, // CALL $18
 
             // d8
-            0xd8 => {0}, // if C RET
-            0xd9 => {0}, // NOP
-            0xda => {0}, // if C jmp addr
+            0xd8 => { self.rc() }, // if C RET
+            0xd9 => {1}, // NOP
+            0xda => { self.jc() }, // if C jmp addr
             0xdb => {0}, // IN (??)
-            0xdc => {0}, // if C CALL addr
-            0xdd => {0}, // NOP
-            0xde => {0}, // sutract immediate byte & carry from acc & set all flags
+            0xdc => { self.cc() }, // if C CALL addr
+            0xdd => {1}, // NOP
+            0xde => { self.sbi() }, // sutract immediate byte & carry from acc & set all flags
             0xdf => { self.rst(0x18) }, // CALL $18 (??)
 
             // e0
-            0xe0 => {0}, // if PO RET
+            0xe0 => { self.rpo() }, // if PO RET
             0xe1 => { self.pop(HL) }, // POP H
-            0xe2 => {0}, // JPO addr
+            0xe2 => { self.jpo() }, // JPO addr
             0xe3 => {0}, // XTHL
-            0xe4 => {0}, // if PO call addr
+            0xe4 => { self.cpo() }, // if PO call addr
             0xe5 => { self.push(HL) }, // PUSH H
             0xe6 => {0}, // bitwise AND acc with immediate byte & set flags
             0xe7 => { self.rst(0x20) }, // CALL $20
 
             // e8
-            0xe8 => {0}, // if PE RET
+            0xe8 => { self.rpe() }, // if PE RET
             0xe9 => {0}, // PCHL
             0xea => {0}, // if PE move immediate word to PC
             0xeb => {0}, // XCHG
-            0xec => {0}, // if PE call addr
+            0xec => { self.cpe() }, // if PE call addr
             0xed => {0}, // NOP
             0xee => {0}, // bitwise XOR immediate byte with acc and set flags
             0xef => { self.rst(0x28) }, // CALL $28
 
             // f0
-            0xf0 => {0}, // if P RET
+            0xf0 => { self.rp() }, // if P RET
             0xf1 => { self.pop(PSW) }, // POP psw
-            0xf2 => {0}, // if P jmp addr
+            0xf2 => { self.jp() }, // if P jmp addr
             0xf3 => {0}, // DI (??)
-            0xf4 => {0}, // if P jmp addr
+            0xf4 => { self.cp() }, // if P call addr
             0xf5 => { self.push(PSW) }, // PUSH PSW
             0xf6 => {0}, // bitwise OR immediate byte with acc and set flags
             0xf7 => { self.rst(0x30) }, // CALL $30
 
             // f8
-            0xf8 => {0}, // if M, RET
+            0xf8 => { self.rm() }, // if M, RET
             0xf9 => {0}, // SPHL
-            0xfa => {0}, // if M jmp addr
+            0xfa => { self.jm() }, // if M jmp addr
             0xfb => {0}, // EI (??)
-            0xfc => {0}, // if M call addr
+            0xfc => { self.cm() }, // if M call addr
             0xfd => {0}, // NOP
-            0xfe => {0}, // compare acc to immediate byte & set vlags
+            0xfe => {0}, // compare acc to immediate byte & set flags
             0xff => { self.rst(0x38) }, // CALL $38
         }
     }
@@ -1630,7 +1827,7 @@ mod tests {
     }
 
     // TODO: Add test for jz
-    
+
     #[test]
     fn test_call_ret() {
         let mut cpu = CPU::new();
@@ -1662,4 +1859,8 @@ mod tests {
     // TODO: Add tests for RST
 
     // TODO: Add test for RNZ
+
+    // TODO: Add test for ACI
+
+    // TODO: Add test for SUI
 }
