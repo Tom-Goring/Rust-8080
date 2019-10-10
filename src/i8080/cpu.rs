@@ -1496,4 +1496,19 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Carry), false);
     }
+
+    #[test]
+    fn test_push_pop() {
+        let mut cpu = CPU::new();
+
+        cpu.memory[0] = 0xc5;
+        cpu.memory[1] = 0xd1;
+        cpu.reg[BC] = 0xABBA;
+        cpu.reg[SP] = 0xDDDD;
+
+        cpu.tick();
+        cpu.tick();
+
+        assert_eq!(cpu.reg[BC], cpu.reg[DE]);
+    }
 }
