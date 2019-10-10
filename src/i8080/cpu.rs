@@ -601,6 +601,18 @@ impl CPU { // STACK GROUP
         self.memory[self.reg[SP] + 1] = tmp_l;
         1
     }
+
+    fn pchl(&mut self) -> Word {
+        self.reg[PC] = self.reg[HL];
+        1
+    }
+
+    fn xchg(&mut self) -> Word {
+        let tmp_hl = self.reg[HL];
+        self.reg[HL] = self.reg[DE];
+        self.reg[DE] = tmp_hl;
+        1
+    }
 }
 
 impl CPU {
@@ -898,11 +910,11 @@ impl CPU {
 
             // e8
             0xe8 => { self.rpe() }, // if PE RET
-            0xe9 => {0}, // PCHL
+            0xe9 => { self.pchl() }, // PCHL
             0xea => { self.jpe() }, // if PE move immediate word to PC
-            0xeb => {0}, // XCHG
+            0xeb => { self.xchg() }, // XCHG
             0xec => { self.cpe() }, // if PE call addr
-            0xed => {0}, // NOP
+            0xed => {1}, // NOP
             0xee => { self.xri() }, // bitwise XOR immediate byte with acc and set flags
             0xef => { self.rst(0x28) }, // CALL $28
 
@@ -1910,6 +1922,8 @@ mod tests {
         assert_eq!(cpu.memory[cpu.reg[SP] + 1], 0xB);
     }
 
+
+
     // TODO: Add test for RZ
 
     // TODO: Add test for ADI
@@ -1921,4 +1935,6 @@ mod tests {
     // TODO: Add test for ACI
 
     // TODO: Add test for SUI
+
+    // TODO: Add test for PCHL & XCHG
 }
