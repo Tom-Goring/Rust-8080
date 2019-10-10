@@ -142,7 +142,12 @@ impl CPU { // ARITHMETIC GROUP
         1
     }
 
-    // ADI
+    fn adi(&mut self) -> Word {
+        let (result, overflow) = self.reg[A].overflowing_add(self.read_byte_immediate());
+        self.set_flags_on_result(result, overflow);
+        self.reg[A] = result;
+        2
+    }
 }
 
 impl CPU { // LOGICAL GROUP
@@ -282,16 +287,35 @@ impl CPU { // DATA TRANSFER GROUP
 }
 
 impl CPU { // BRANCH GROUP
+    fn call(&mut self) -> Word {
+        self.reg[SP] -= 2;
+        self.write_word_to_memory(self.reg[SP], self.reg[PC] + 3);
+        self.jmp();
+        0
+    }
+
+    fn cnz(&mut self) -> Word {
+        if !self.reg.get_flag(Zero) {
+            self.call()
+        }
+        else {
+            3
+        }
+    }
+
     fn ret(&mut self) -> Word {
         self.reg[PC] = self.read_word_at_address(self.reg[SP]);
         self.reg[SP] += 2;
         0
     }
 
-    fn pop(&mut self, x: Reg16) -> Word {
-        self.reg[x] = self.read_word_at_address(self.reg[SP]);
-        self.reg[SP] += 2;
-        1
+    fn rz(&mut self) -> Word {
+        if self.reg.get_flag(Zero) {
+            self.ret()
+        }
+        else {
+            1
+        }
     }
 
     fn push(&mut self, x: Reg16) -> Word {
@@ -300,9 +324,24 @@ impl CPU { // BRANCH GROUP
         1
     }
 
+    fn pop(&mut self, x: Reg16) -> Word {
+        self.reg[x] = self.read_word_at_address(self.reg[SP]);
+        self.reg[SP] += 2;
+        1
+    }
+
     fn jmp(&mut self) -> Word {
         self.reg[PC] = self.read_word_immediate();
         0
+    }
+
+    fn jz(&mut self) -> Word {
+        if self.reg.get_flag(Zero) {
+            self.jmp()
+        }
+        else {
+            1
+        }
     }
 
     fn jnz(&mut self) -> Word {
@@ -313,10 +352,10 @@ impl CPU { // BRANCH GROUP
         }
     }
 
-    fn call(&mut self) -> Word {
+    fn rst(&mut self, address: Address) -> Word {
         self.reg[SP] -= 2;
         self.write_word_to_memory(self.reg[SP], self.reg[PC] + 3);
-        self.jmp();
+        self.reg[PC] = address;
         0
     }
 }
@@ -569,20 +608,20 @@ impl CPU {
             0xc1 => { self.pop(BC) }, // POP B
             0xc2 => { self.jnz() }, // JNZ addr
             0xc3 => { self.jmp() }, // JMP addr
-            0xc4 => {0}, // if NZ CALL addr
+            0xc4 => { self.cnz() }, // if NZ CALL addr
             0xc5 => { self.push(BC) }, // PUSH B
-            0xc6 => {0}, // ADI (add immediate to acc)
-            0xc7 => {0}, // CALL $0 (??)
+            0xc6 => { self.adi() }, // ADI (add immediate to acc)
+            0xc7 => { self.rst(0x0) }, // CALL $0 (??)
 
             // c8
-            0xc8 => {0}, // If Z RET
+            0xc8 => { self.rz() }, // If Z RET
             0xc9 => { self.ret() }, // RET
             0xca => {0}, // JZ addr
             0xcb => {0}, // NOP
             0xcc => {0}, // if Z CALL addr
             0xcd => { self.call() }, // CALL addr
             0xce => {0}, // ACI (add immediate byte & carry to acc)
-            0xcf => {0}, // CALL $8
+            0xcf => { self.rst(0x8) }, // CALL $8
 
             // d0
             0xd0 => {0}, // if !C RET
@@ -592,7 +631,7 @@ impl CPU {
             0xd4 => {0}, // if !C CALL addr
             0xd5 => { self.push(DE) }, // PUSH D
             0xd6 => {0}, // subtract immediate byte from acc & set all flags
-            0xd7 => {0}, // CALL $10
+            0xd7 => { self.rst(0x10) }, // CALL $18
 
             // d8
             0xd8 => {0}, // if C RET
@@ -602,7 +641,7 @@ impl CPU {
             0xdc => {0}, // if C CALL addr
             0xdd => {0}, // NOP
             0xde => {0}, // sutract immediate byte & carry from acc & set all flags
-            0xdf => {0}, // CALL $18 (??)
+            0xdf => { self.rst(0x18) }, // CALL $18 (??)
 
             // e0
             0xe0 => {0}, // if PO RET
@@ -612,7 +651,7 @@ impl CPU {
             0xe4 => {0}, // if PO call addr
             0xe5 => { self.push(HL) }, // PUSH H
             0xe6 => {0}, // bitwise AND acc with immediate byte & set flags
-            0xe7 => {0}, // CALL $20
+            0xe7 => { self.rst(0x20) }, // CALL $20
 
             // e8
             0xe8 => {0}, // if PE RET
@@ -622,7 +661,7 @@ impl CPU {
             0xec => {0}, // if PE call addr
             0xed => {0}, // NOP
             0xee => {0}, // bitwise XOR immediate byte with acc and set flags
-            0xef => {0}, // CALL $28
+            0xef => { self.rst(0x28) }, // CALL $28
 
             // f0
             0xf0 => {0}, // if P RET
@@ -632,7 +671,7 @@ impl CPU {
             0xf4 => {0}, // if P jmp addr
             0xf5 => { self.push(PSW) }, // PUSH PSW
             0xf6 => {0}, // bitwise OR immediate byte with acc and set flags
-            0xf7 => {0}, // CALL $30
+            0xf7 => { self.rst(0x30) }, // CALL $30
 
             // f8
             0xf8 => {0}, // if M, RET
@@ -642,7 +681,7 @@ impl CPU {
             0xfc => {0}, // if M call addr
             0xfd => {0}, // NOP
             0xfe => {0}, // compare acc to immediate byte & set vlags
-            0xff => {0}, // CALL $38
+            0xff => { self.rst(0x38) }, // CALL $38
         }
     }
 }
@@ -1581,6 +1620,8 @@ mod tests {
         assert_eq!(cpu.reg[PC], 0xAABB);
     }
 
+    // TODO: Add test for jz
+
     #[test]
     fn test_call_ret() {
         let mut cpu = CPU::new();
@@ -1604,4 +1645,10 @@ mod tests {
         assert_eq!(cpu.reg[PC], 0x4);
         assert_eq!(cpu.reg[A], 0x3);
     }
+
+    // TODO: Add test for RZ
+
+    // TODO: Add test for ADI
+
+    // TODO: Add tests for RST
 }
