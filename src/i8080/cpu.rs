@@ -616,7 +616,7 @@ impl CPU {
             // c8
             0xc8 => { self.rz() }, // If Z RET
             0xc9 => { self.ret() }, // RET
-            0xca => {0}, // JZ addr
+            0xca => { self.jz() }, // JZ addr
             0xcb => {0}, // NOP
             0xcc => {0}, // if Z CALL addr
             0xcd => { self.call() }, // CALL addr
