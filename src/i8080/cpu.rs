@@ -271,8 +271,9 @@ impl CPU {
     }
 
     fn ret(&mut self) -> Word {
-        
-        1
+        self.reg[PC] = self.read_word_at_address(self.reg[SP]);
+        self.reg[SP] += 2;
+        0
     }
 
     fn pop(&mut self, x: Reg16) -> Word {
@@ -298,6 +299,13 @@ impl CPU {
         } else {
             3
         }
+    }
+
+    fn call(&mut self) -> Word {
+        self.reg[SP] -= 2;
+        self.write_word_to_memory(self.reg[SP], self.reg[PC] + 3);
+        self.jmp();
+        0
     }
 }
 
@@ -556,11 +564,11 @@ impl CPU {
 
             // c8
             0xc8 => {0}, // If Z RET
-            0xc9 => {0}, // RET
+            0xc9 => { self.ret() }, // RET
             0xca => {0}, // JZ addr
             0xcb => {0}, // NOP
             0xcc => {0}, // if Z CALL addr
-            0xcd => {0}, // CALL addr
+            0xcd => { self.call() }, // CALL addr
             0xce => {0}, // ACI (add immediate byte & carry to acc)
             0xcf => {0}, // CALL $8
 
@@ -1559,5 +1567,29 @@ mod tests {
         cpu.tick();
 
         assert_eq!(cpu.reg[PC], 0xAABB);
+    }
+
+    #[test]
+    fn test_call_ret() {
+        let mut cpu = CPU::new();
+
+        cpu.reg[SP] = 0x100;
+
+        cpu.reg[B] = 1;
+        cpu.reg[C] = 2;
+
+        cpu.memory[0] = 0xcd;
+        cpu.memory[1] = 0xBB;
+        cpu.memory[2] = 0xAA;
+        cpu.memory[0xAABB] = 0x80;
+        cpu.memory[0xAABC] = 0xc9;
+        cpu.memory[3] = 0x81;
+
+        for _ in 0..4 {
+            cpu.tick();
+        }
+
+        assert_eq!(cpu.reg[PC], 0x4);
+        assert_eq!(cpu.reg[A], 0x3);
     }
 }
