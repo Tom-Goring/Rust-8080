@@ -243,6 +243,31 @@ impl CPU { // LOGICAL GROUP
         self.reg.set_flag(Carry, set_flag);
         1
     }
+
+    fn ani(&mut self) -> Word {
+        self.reg[A] &= self.read_byte_immediate();
+        self.set_flags_on_result(self.reg[A], false);
+        2
+    }
+
+    fn xri(&mut self) -> Word {
+        self.reg[A] ^= self.read_byte_immediate();
+        self.set_flags_on_result(self.reg[A], false);
+        2
+    }
+
+    fn ori(&mut self) -> Word {
+        self.reg[A] |= self.read_byte_immediate();
+        self.set_flags_on_result(self.reg[A], false);
+        2
+    }
+
+    fn cpi(&mut self) -> Word {
+        let byte = self.read_byte_immediate();
+        self.reg.set_flag(Carry, self.reg[A] < byte);
+        self.reg.set_flag(Zero, self.reg[A] == byte);
+        2
+    }
 }
 
 impl CPU { // IO & SPECIAL GROUP
@@ -856,7 +881,7 @@ impl CPU {
             0xe3 => {0}, // XTHL
             0xe4 => { self.cpo() }, // if PO call addr
             0xe5 => { self.push(HL) }, // PUSH H
-            0xe6 => {0}, // bitwise AND acc with immediate byte & set flags
+            0xe6 => { self.ani() }, // bitwise AND acc with immediate byte & set flags
             0xe7 => { self.rst(0x20) }, // CALL $20
 
             // e8
@@ -866,7 +891,7 @@ impl CPU {
             0xeb => {0}, // XCHG
             0xec => { self.cpe() }, // if PE call addr
             0xed => {0}, // NOP
-            0xee => {0}, // bitwise XOR immediate byte with acc and set flags
+            0xee => { self.xri() }, // bitwise XOR immediate byte with acc and set flags
             0xef => { self.rst(0x28) }, // CALL $28
 
             // f0
@@ -876,7 +901,7 @@ impl CPU {
             0xf3 => {0}, // DI (??)
             0xf4 => { self.cp() }, // if P call addr
             0xf5 => { self.push(PSW) }, // PUSH PSW
-            0xf6 => {0}, // bitwise OR immediate byte with acc and set flags
+            0xf6 => { self.ori() }, // bitwise OR immediate byte with acc and set flags
             0xf7 => { self.rst(0x30) }, // CALL $30
 
             // f8
@@ -885,8 +910,8 @@ impl CPU {
             0xfa => { self.jm() }, // if M jmp addr
             0xfb => {0}, // EI (??)
             0xfc => { self.cm() }, // if M call addr
-            0xfd => {0}, // NOP
-            0xfe => {0}, // compare acc to immediate byte & set flags
+            0xfd => {1}, // NOP
+            0xfe => { self.cpi() }, // compare acc to immediate byte & set flags
             0xff => { self.rst(0x38) }, // CALL $38
         }
     }
