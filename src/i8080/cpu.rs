@@ -37,7 +37,7 @@ impl CPU {
     }
 }
 
-impl CPU {
+impl CPU { // Helper functions
     fn read_byte_at_address(&self, address: Address) -> Byte {
         self.memory[address]
     }
@@ -76,118 +76,7 @@ impl CPU {
     }
 }
 
-impl CPU {
-    fn lxi(&mut self, x: Reg16) -> Word {
-        self.reg[x] = self.read_word_immediate();
-        3
-    }
-
-    fn stax(&mut self, x: Reg16) -> Word {
-        self.memory[self.reg[x]] = self.reg[A];
-        1
-    }
-
-    fn inx(&mut self, x: Reg16) -> Word {
-        self.reg[x] += 1;
-        1
-    }
-
-    fn inr(&mut self, x: Reg8) -> Word {
-        self.reg[x] += 1;
-        1
-    }
-
-    fn inr_m(&mut self) -> Word {
-        self.memory[self.reg[HL]] += 1;
-        1
-    }
-
-    fn dcr(&mut self, x: Reg8) -> Word {
-        self.reg[x] -= 1;
-        1
-    }
-
-    fn dcr_m(&mut self) -> Word {
-        self.memory[self.reg[HL]] -= 1;
-        1
-    }
-
-    fn mvi(&mut self, x: Reg8) -> Word {
-        self.reg[x] = self.read_byte_immediate();
-        2
-    }
-
-    fn mvi_m(&mut self) -> Word {
-        self.memory[self.reg[HL]] = self.read_byte_immediate();
-        2
-    }
-
-    fn dad(&mut self, x: Reg16) -> Word {
-        self.reg[HL] += self.reg[x];
-        1
-    }
-
-    fn ldax(&mut self, x: Reg16) -> Word {
-        self.reg[A] = self.memory[self.reg[x]];
-        1
-    }
-
-    fn dcx(&mut self, x: Reg16) -> Word {
-        self.reg[x] -= 1;
-        1
-    }
-
-    fn shld(&mut self) -> Word {
-        let (address, address2) = self.read_bytes_immediate();
-        self.memory[address as Address] = self.reg[L];
-        self.memory[address2 as Address] = self.reg[H];
-        3
-    }
-
-    fn lhld(&mut self) -> Word {
-        let (address, address2) = self.read_bytes_immediate();
-        self.reg[L] = self.memory[address as Address];
-        self.reg[H] = self.memory[address2 as Address];
-        3
-    }
-
-    fn cma(&mut self) -> Word {
-        self.reg[A] = !(self.reg[A]);
-        1
-    }
-
-    fn sta(&mut self) -> Word {
-        let address = self.read_word_immediate();
-        self.memory[address] = self.reg[A];
-        3
-    }
-
-    fn stc(&mut self) -> Word {
-        self.reg.set_flag(Carry, true);
-        1
-    }
-
-    fn lda(&mut self) -> Word {
-        self.reg[A] = self.memory[self.read_word_immediate()];
-        3
-    }
-
-    fn cmc(&mut self) -> Word {
-        self.reg.set_flag(Carry, !self.reg.get_flag(Carry));
-        1
-    }
-
-    fn mov(&mut self, dest: Reg8, src: Reg8) -> Word {
-        if dest == M {
-            self.memory[self.reg[HL]] = self.reg[src];
-        } else if src == M {
-            self.reg[dest] = self.memory[self.reg[HL]];
-        } else {
-            self.reg[dest] = self.reg[src];
-        }
-        1
-    }
-
+impl CPU { // ARITHMETIC GROUP
     fn add(&mut self, byte: Byte) -> Word {
         let (result, overflow) = self.reg[A].overflowing_add(byte);
         self.set_flags_on_result(result, overflow);
@@ -218,7 +107,46 @@ impl CPU {
         1
     }
 
-    fn ana(&mut self, byte: Byte) -> Word {
+    fn inr(&mut self, x: Reg8) -> Word {
+        self.reg[x] += 1;
+        1
+    }
+
+    fn inr_m(&mut self) -> Word {
+        self.memory[self.reg[HL]] += 1;
+        1
+    }
+
+    fn dcr(&mut self, x: Reg8) -> Word {
+        self.reg[x] -= 1;
+        1
+    }
+
+    fn dcr_m(&mut self) -> Word {
+        self.memory[self.reg[HL]] -= 1;
+        1
+    }
+
+    fn inx(&mut self, x: Reg16) -> Word {
+        self.reg[x] += 1;
+        1
+    }
+
+    fn dcx(&mut self, x: Reg16) -> Word {
+        self.reg[x] -= 1;
+        1
+    }
+
+    fn dad(&mut self, x: Reg16) -> Word {
+        self.reg[HL] += self.reg[x];
+        1
+    }
+
+    // ADI
+}
+
+impl CPU { // LOGICAL GROUP
+        fn ana(&mut self, byte: Byte) -> Word {
         self.reg[A] &= byte;
         self.set_zspac_flags_on_byte(self.reg[A]);
         1
@@ -239,6 +167,21 @@ impl CPU {
     fn cmp(&mut self, byte: Byte) -> Word {
         self.reg.set_flag(Carry, self.reg[A] < byte);
         self.reg.set_flag(Zero, self.reg[A] == byte);
+        1
+    }
+
+    fn cma(&mut self) -> Word {
+        self.reg[A] = !(self.reg[A]);
+        1
+    }
+
+    fn cmc(&mut self) -> Word {
+        self.reg.set_flag(Carry, !self.reg.get_flag(Carry));
+        1
+    }
+
+    fn stc(&mut self) -> Word {
+        self.reg.set_flag(Carry, true);
         1
     }
 
@@ -269,7 +212,76 @@ impl CPU {
         self.reg.set_flag(Carry, set_flag);
         1
     }
+}
 
+impl CPU { // IO & SPECIAL GROUP
+
+}
+
+impl CPU { // DATA TRANSFER GROUP
+    fn mov(&mut self, dest: Reg8, src: Reg8) -> Word {
+        if dest == M {
+            self.memory[self.reg[HL]] = self.reg[src];
+        } else if src == M {
+            self.reg[dest] = self.memory[self.reg[HL]];
+        } else {
+            self.reg[dest] = self.reg[src];
+        }
+        1
+    }
+
+    fn mvi(&mut self, x: Reg8) -> Word { // TODO: Combine mvi & mvi_m functions
+        self.reg[x] = self.read_byte_immediate();
+        2
+    }
+
+    fn mvi_m(&mut self) -> Word {
+        self.memory[self.reg[HL]] = self.read_byte_immediate();
+        2
+    }
+
+    fn lda(&mut self) -> Word {
+        self.reg[A] = self.memory[self.read_word_immediate()];
+        3
+    }
+
+    fn ldax(&mut self, x: Reg16) -> Word {
+        self.reg[A] = self.memory[self.reg[x]];
+        1
+    }
+
+    fn shld(&mut self) -> Word {
+        let (address, address2) = self.read_bytes_immediate();
+        self.memory[address as Address] = self.reg[L];
+        self.memory[address2 as Address] = self.reg[H];
+        3
+    }
+
+    fn lhld(&mut self) -> Word {
+        let (address, address2) = self.read_bytes_immediate();
+        self.reg[L] = self.memory[address as Address];
+        self.reg[H] = self.memory[address2 as Address];
+        3
+    }
+
+    fn lxi(&mut self, x: Reg16) -> Word {
+        self.reg[x] = self.read_word_immediate();
+        3
+    }
+
+    fn stax(&mut self, x: Reg16) -> Word {
+        self.memory[self.reg[x]] = self.reg[A];
+        1
+    }
+
+    fn sta(&mut self) -> Word {
+        let address = self.read_word_immediate();
+        self.memory[address] = self.reg[A];
+        3
+    }
+}
+
+impl CPU { // BRANCH GROUP
     fn ret(&mut self) -> Word {
         self.reg[PC] = self.read_word_at_address(self.reg[SP]);
         self.reg[SP] += 2;
