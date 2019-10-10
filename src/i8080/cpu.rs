@@ -862,7 +862,7 @@ impl CPU {
             // e8
             0xe8 => { self.rpe() }, // if PE RET
             0xe9 => {0}, // PCHL
-            0xea => {0}, // if PE move immediate word to PC
+            0xea => { self.jpe() }, // if PE move immediate word to PC
             0xeb => {0}, // XCHG
             0xec => { self.cpe() }, // if PE call addr
             0xed => {0}, // NOP
