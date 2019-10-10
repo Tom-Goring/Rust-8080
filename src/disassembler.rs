@@ -334,3 +334,21 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
     num_bytes
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::i8080;
+
+    #[test]
+    fn test_disassembler() {
+        let mut cpu = i8080::cpu::CPU::new();
+
+        for x in 0..0xFE {
+            cpu.memory[x] = x as u8;
+        }
+
+        for x in 0..0xFE {
+            disassemble_8080_op(&cpu.memory, x);
+        }
+    }
+}

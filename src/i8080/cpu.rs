@@ -16,6 +16,8 @@ use super::register::Flag::{Carry, Parity, Sign, AuxCarry, Zero};
 pub struct CPU {
     pub reg: Register,
     pub memory: Memory,
+    pub input_ports: [u8; 8],
+    pub output_ports: [u8; 8],
 }
 
 impl CPU {
@@ -23,6 +25,8 @@ impl CPU {
         CPU {
             reg: Register::new(),
             memory: Memory::new(),
+            input_ports: [0; 8],
+            output_ports: [0; 8],
         }
     }
 
@@ -35,6 +39,8 @@ impl CPU {
     pub fn fetch(&self) -> Byte {
         self.memory[self.reg.pc]
     }
+
+    // TODO: Add load function
 }
 
 impl CPU { // Helper functions
