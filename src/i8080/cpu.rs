@@ -613,6 +613,11 @@ impl CPU { // STACK GROUP
         self.reg[DE] = tmp_hl;
         1
     }
+
+    fn sphl(&mut self) -> Word {
+        self.reg[SP] = self.reg[HL];
+        1
+    }
 }
 
 impl CPU {
@@ -1922,8 +1927,6 @@ mod tests {
         assert_eq!(cpu.memory[cpu.reg[SP] + 1], 0xB);
     }
 
-
-
     // TODO: Add test for RZ
 
     // TODO: Add test for ADI
@@ -1936,5 +1939,5 @@ mod tests {
 
     // TODO: Add test for SUI
 
-    // TODO: Add test for PCHL & XCHG
+    // TODO: Add test for PCHL, SPHL & XCHG
 }
