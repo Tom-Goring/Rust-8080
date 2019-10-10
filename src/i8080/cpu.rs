@@ -1411,7 +1411,58 @@ mod tests {
 
             cpu.tick();
             
-            println!("{:08b}", cpu.reg[A]);
+            assert_eq!(cpu.reg[A], results[index as usize]);
+
+            if index != 7 {index += 1};
+        }
+    }
+
+    #[test]
+    fn test_ora() {
+        let registers = [A, B, C, D, E, H, L];
+
+        let values = [
+            0b11111111, // Initial
+            0b11111110, // B
+            0b00000011, // C
+            0b00000110, // D
+            0b00001100, // E
+            0b00011000, // H
+            0b00110000, // L
+            0b01100000, // M
+        ];
+
+        let mut results = Vec::new();
+
+        results.push(values[0] | values[1]);
+
+        for x in 1..7 {
+            results.push(results[x - 1] | values[x + 1]);
+        }
+
+        results.push(0b11111111);
+
+        let mut cpu = CPU::new();
+
+        let mut index = 0;
+        for x in 0xb0..0xb8 {
+            cpu.memory[index] = x;
+            index += 1;
+        }
+
+        for x in 0..7 {
+            cpu.reg[registers[x as usize]] = values[x as usize];
+        }
+
+        index = 0;
+        for x in 0xa8..0xb0 {
+            if x == 0xae {
+                cpu.reg[HL] = 0xDDDD;
+                cpu.memory[cpu.reg[HL]] = 0b01100000;
+            }
+
+            cpu.tick();
+            
             assert_eq!(cpu.reg[A], results[index as usize]);
 
             if index != 7 {index += 1};
