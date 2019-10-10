@@ -10,7 +10,7 @@ use crate::disassembler::disassemble_8080_op;
 use super::register::Reg8;
 use super::register::Reg16;
 use super::register::Reg8::{A, B, C, D, E, H, L, M};
-use super::register::Reg16::{BC, DE, HL, SP, PSW};
+use super::register::Reg16::{BC, DE, HL, SP, PC, PSW};
 use super::register::Flag::{Carry, Parity, Sign, AuxCarry, Zero};
 
 pub struct CPU {
@@ -286,6 +286,19 @@ impl CPU {
         self.write_word_to_memory(self.reg[SP], self.reg[x]);
         1
     }
+
+    fn jmp(&mut self) -> Word {
+        self.reg[PC] = self.read_word_immediate();
+        0
+    }
+
+    fn jnz(&mut self) -> Word {
+        if !self.reg.get_flag(Zero) {
+            self.jmp()
+        } else {
+            3
+        }
+    }
 }
 
 impl CPU {
@@ -534,8 +547,8 @@ impl CPU {
             // c0
             0xc0 => {0}, // If not 0 RET
             0xc1 => { self.pop(BC) }, // POP B
-            0xc2 => {0}, // JNZ addr
-            0xc3 => {0}, // JMP addr
+            0xc2 => { self.jnz() }, // JNZ addr
+            0xc3 => { self.jmp() }, // JMP addr
             0xc4 => {0}, // if NZ CALL addr
             0xc5 => { self.push(BC) }, // PUSH B
             0xc6 => {0}, // ADI (add immediate to acc)
@@ -1510,5 +1523,41 @@ mod tests {
         cpu.tick();
 
         assert_eq!(cpu.reg[BC], cpu.reg[DE]);
+    }
+
+    #[test]
+    fn test_jmp() {
+        let mut cpu = CPU::new();
+
+        cpu.memory[0] = 0xc3;
+        cpu.memory[1] = 0xBB;
+        cpu.memory[2] = 0xAA;
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg[PC], 0xAABB);
+    }
+
+    #[test]
+    fn test_jnz() {
+        let mut cpu = CPU::new();
+
+        cpu.memory[0] = 0xc2;
+        cpu.memory[1] = 0xBB;
+        cpu.memory[2] = 0xAA;
+        cpu.memory[3] = 0xc2;
+        cpu.memory[4] = 0xBB;
+        cpu.memory[5] = 0xAA;
+        cpu.reg.set_flag(Zero, true);
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg[PC], 3);
+
+        cpu.reg.set_flag(Zero, false);
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg[PC], 0xAABB);
     }
 }
