@@ -184,7 +184,6 @@ impl CPU {
             self.reg[dest] = self.memory[self.reg[HL]];
         } else {
             self.reg[dest] = self.reg[src];
-            println!("Moving reg[{:?}] of value {} to reg[{:?}]", src, self.reg[src], dest);
         }
         1
     }
@@ -239,7 +238,7 @@ impl CPU {
 
     fn cmp(&mut self, byte: Byte) -> Word {
         self.reg.set_flag(Carry, self.reg[A] < byte);
-        self.reg.set_flag(Zero, self.reg[A] >= byte);
+        self.reg.set_flag(Zero, self.reg[A] == byte);
         1
     }
 
@@ -1467,5 +1466,34 @@ mod tests {
 
             if index != 7 {index += 1};
         }
+    }
+
+    #[test]
+    fn test_cmp() {
+        let mut cpu = CPU::new();
+
+        cpu.memory[0] = 0xb8;
+        cpu.memory[1] = 0xb9;
+        cpu.memory[2] = 0xba;
+
+        cpu.reg[A] = 0b00001111;
+        cpu.reg[B] = 0b00001111; // Zero set
+        cpu.reg[C] = 0b00011111; // Carry set
+        cpu.reg[D] = 0b00000001; // Both reset
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg.get_flag(Zero), true);
+        assert_eq!(cpu.reg.get_flag(Carry), false);
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg.get_flag(Zero), false);
+        assert_eq!(cpu.reg.get_flag(Carry), true);
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg.get_flag(Zero), false);
+        assert_eq!(cpu.reg.get_flag(Carry), false);
     }
 }
