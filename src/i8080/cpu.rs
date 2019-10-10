@@ -495,18 +495,6 @@ impl CPU { // BRANCH GROUP
         }
     }
 
-    fn push(&mut self, x: Reg16) -> Word {
-        self.reg[SP] -= 2;
-        self.write_word_to_memory(self.reg[SP], self.reg[x]);
-        1
-    }
-
-    fn pop(&mut self, x: Reg16) -> Word {
-        self.reg[x] = self.read_word_at_address(self.reg[SP]);
-        self.reg[SP] += 2;
-        1
-    }
-
     fn jmp(&mut self) -> Word {
         self.reg[PC] = self.read_word_immediate();
         0
@@ -588,6 +576,30 @@ impl CPU { // BRANCH GROUP
         self.write_word_to_memory(self.reg[SP], self.reg[PC] + 3);
         self.reg[PC] = address;
         0
+    }
+}
+
+impl CPU { // STACK GROUP
+    fn push(&mut self, x: Reg16) -> Word {
+        self.reg[SP] -= 2;
+        self.write_word_to_memory(self.reg[SP], self.reg[x]);
+        1
+    }
+
+    fn pop(&mut self, x: Reg16) -> Word {
+        self.reg[x] = self.read_word_at_address(self.reg[SP]);
+        self.reg[SP] += 2;
+        1
+    }
+
+    fn xhtl(&mut self) -> Word {
+        let tmp_h = self.reg[H];
+        let tmp_l = self.reg[L];
+        self.reg[H] = self.memory[self.reg[SP]];
+        self.reg[L] = self.memory[self.reg[SP] + 1];
+        self.memory[self.reg[SP]] = tmp_h;
+        self.memory[self.reg[SP] + 1] = tmp_l;
+        1
     }
 }
 
@@ -878,7 +890,7 @@ impl CPU {
             0xe0 => { self.rpo() }, // if PO RET
             0xe1 => { self.pop(HL) }, // POP H
             0xe2 => { self.jpo() }, // JPO addr
-            0xe3 => {0}, // XTHL
+            0xe3 => { self.xhtl() }, // XTHL
             0xe4 => { self.cpo() }, // if PO call addr
             0xe5 => { self.push(HL) }, // PUSH H
             0xe6 => { self.ani() }, // bitwise AND acc with immediate byte & set flags
@@ -1875,6 +1887,27 @@ mod tests {
 
         assert_eq!(cpu.reg[PC], 0x4);
         assert_eq!(cpu.reg[A], 0x3);
+    }
+
+    #[test]
+    fn test_xhtl() {
+        let mut cpu = CPU::new();
+
+        cpu.memory[0] = 0xe3;
+
+        cpu.reg[SP] = 0x100;
+
+        cpu.reg[H] = 0xA;
+        cpu.reg[L] = 0xB;
+
+        cpu.memory[cpu.reg[SP]] = 0xFF;
+        cpu.memory[cpu.reg[SP] + 1] = 0xFF;
+
+        cpu.tick();
+
+        assert_eq!(cpu.reg[HL], 0xFFFF);
+        assert_eq!(cpu.memory[cpu.reg[SP]], 0xA);
+        assert_eq!(cpu.memory[cpu.reg[SP] + 1], 0xB);
     }
 
     // TODO: Add test for RZ
