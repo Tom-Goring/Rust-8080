@@ -309,6 +309,15 @@ impl CPU { // BRANCH GROUP
         0
     }
 
+    fn rnz(&mut self) -> Word {
+        if !self.reg.get_flag(Zero) {
+            self.ret()
+        }
+        else {
+            1
+        }
+    }
+
     fn rz(&mut self) -> Word {
         if self.reg.get_flag(Zero) {
             self.ret()
@@ -604,7 +613,7 @@ impl CPU {
             0xbf => { self.cmp(self.reg[A]) },
 
             // c0
-            0xc0 => {0}, // If not 0 RET
+            0xc0 => { self.rnz() }, // If not 0 RET
             0xc1 => { self.pop(BC) }, // POP B
             0xc2 => { self.jnz() }, // JNZ addr
             0xc3 => { self.jmp() }, // JMP addr
@@ -1621,7 +1630,7 @@ mod tests {
     }
 
     // TODO: Add test for jz
-
+    
     #[test]
     fn test_call_ret() {
         let mut cpu = CPU::new();
@@ -1651,4 +1660,6 @@ mod tests {
     // TODO: Add test for ADI
 
     // TODO: Add tests for RST
+
+    // TODO: Add test for RNZ
 }
