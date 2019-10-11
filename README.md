@@ -13,10 +13,24 @@ Clone the repository, and then from the repo directory run ```cargo run```
 To run the tests, run ```cargo test```
 
 ## TODO: 
-- Finish opcodes
-- Add output drivers
-- WebAssembly?
-- Fix tests that aren't properly implemented (especially the mov tests, which can be expanded after the refactor)
+- Locate errors preventing cpudiag from working
+  - Possibly one of:
+    - POP (test exists)
+    - RET (test exists)
+    - LXI (test exists)
+    - MOV (tests exist)
+    - DAD (test exists)
+    - PUSH (test exists)
+    - XCHG (untested)
+    - MVI (test exists)
+    - CALL (test exists)
+    - CPUDIAG print itself (definitely prints something, but then corrupted)
+- Add tests for all remaining untested instructions & fix up old tests
+
+## Current State: 
+- Space Invaders displays title & attempts to start game before getting stuck
+- Single alien displayed in incorrect location
+- No controls seem to work
 
 ## Resources:
 
