@@ -30,25 +30,34 @@ fn main() -> Result<(), String> {
     let rom_bytes: Vec<u8> = rom.bytes().map(|x| x.unwrap()).collect();
     cpu.memory.load(0x0000, &rom_bytes);
 
-    loop {
-        cpu.tick(&mut machine);
-        let framebuffer = cpu.memory.view(0x2400, 0x3FFF);
+    let mut interrupt = 1;
 
-        screen.clear();
-        for y in 0..224 {
-            let line = &framebuffer[(32 * y)..(32 * y + 32)];
-            for (x, px) in line.iter().enumerate() {
-                for b in 0..8 {
-                    if px & (1 << b) != 0 {
-                        screen.draw(y as i16, 256 - (8 * x + b) as i16, 255)?;
+    'main: loop {
+        cpu.tick(&mut machine);
+
+        cpu.trigger_interrupt(interrupt);
+        interrupt = if interrupt == 1 { 2 } else { 1 };
+
+        if interrupt == 1 {
+            let framebuffer = cpu.memory.view(0x2400, 0x3FFF);
+
+            screen.clear();
+            for y in 0..224 {
+                let line = &framebuffer[(32 * y)..(32 * y + 32)];
+                for (x, px) in line.iter().enumerate() {
+                    for b in 0..8 {
+                        if px & (1 << b) != 0 {
+                            screen.draw(y as i16, 256 - (8 * x + b) as i16, 255)?;
+                        }
                     }
                 }
             }
+            screen.canvas.present();
         }
-        screen.canvas.present();
 
         for event in event_pump.poll_iter() {
             match event {
+                Event::Quit {..} => break 'main,
                 Event::KeyDown {
                     keycode: Some(keycode),
                     ..
@@ -63,6 +72,7 @@ fn main() -> Result<(), String> {
                     Keycode::C => machine.release_key(Keys::Coin),
                     Keycode::Num1 => machine.press_key(Keys::Start1),
                     Keycode::Num2 => machine.press_key(Keys::Start2),
+                    Keycode::Return => pause(),
                     _ => (),
                 },
                 Event::KeyUp {
@@ -80,10 +90,11 @@ fn main() -> Result<(), String> {
                     Keycode::Num2 => machine.release_key(Keys::Start2),
                     _ => (),
                 },
+
                 _ => {}
             }
         }
-        pause();
+        //pause();
     }
 
     Ok(())

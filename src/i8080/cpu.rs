@@ -40,6 +40,12 @@ impl CPU {
     pub fn fetch(&self) -> Byte {
         self.memory[self.reg.pc]
     }
+
+    pub fn trigger_interrupt(&mut self, interrupt_num: Word) {
+        self.reg[SP] -= 2;
+        self.write_word_to_memory(self.reg[SP], self.reg[PC]);
+        self.reg[PC] = 8 * interrupt_num;
+    }
 }
 
 impl CPU { // Helper functions
@@ -114,21 +120,25 @@ impl CPU { // ARITHMETIC GROUP
 
     fn inr(&mut self, x: Reg8) -> Word {
         self.reg[x] += 1;
+        self.set_zspac_flags_on_byte(self.reg[x]);
         1
     }
 
     fn inr_m(&mut self) -> Word {
         self.memory[self.reg[HL]] += 1;
+        self.set_zspac_flags_on_byte(self.memory[self.reg[HL]]);
         1
     }
 
     fn dcr(&mut self, x: Reg8) -> Word {
-        self.reg[x] -= 1;
+        self.reg[x] = self.reg[x].wrapping_sub(1);
+        self.set_zspac_flags_on_byte(self.reg[x]);
         1
     }
 
     fn dcr_m(&mut self) -> Word {
-        self.memory[self.reg[HL]] -= 1;
+        self.memory[self.reg[HL]] = self.memory[self.reg[HL]].wrapping_sub(1);
+        self.set_zspac_flags_on_byte(self.memory[self.reg[HL]]);
         1
     }
 
