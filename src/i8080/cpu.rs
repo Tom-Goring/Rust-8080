@@ -4,6 +4,7 @@ pub type Byte = u8;
 
 use super::register::Register;
 use super::memory::Memory;
+use super::machine_interface::Machine;
 
 use crate::disassembler::disassemble_8080_op;
 
@@ -16,8 +17,8 @@ use super::register::Flag::{Carry, Parity, Sign, AuxCarry, Zero};
 pub struct CPU {
     pub reg: Register,
     pub memory: Memory,
-    pub input_ports: [u8; 8],
-    pub output_ports: [u8; 8],
+    pub input_ports: [u8; 4],
+    pub output_ports: [u8; 5],
 }
 
 impl CPU {
@@ -25,15 +26,15 @@ impl CPU {
         CPU {
             reg: Register::new(),
             memory: Memory::new(),
-            input_ports: [0; 8],
-            output_ports: [0; 8],
+            input_ports: [0; 4],
+            output_ports: [0; 5],
         }
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self, machine: &mut impl Machine) {
         let opcode = self.fetch();
         disassemble_8080_op(&self.memory, self.reg.pc);
-        self.reg.pc += self.execute_opcode(opcode);
+        self.reg.pc += self.execute_opcode(opcode, machine);
     }
 
     pub fn fetch(&self) -> Byte {
@@ -274,10 +275,6 @@ impl CPU { // LOGICAL GROUP
         self.reg.set_flag(Zero, self.reg[A] == byte);
         2
     }
-}
-
-impl CPU { // IO & SPECIAL GROUP
-
 }
 
 impl CPU { // DATA TRANSFER GROUP
@@ -627,7 +624,7 @@ impl CPU { // STACK GROUP
 }
 
 impl CPU {
-    pub fn execute_opcode(&mut self, opcode: Byte) -> Word {
+    pub fn execute_opcode(&mut self, opcode: Byte, machine: &mut impl Machine) -> Word {
         match opcode {
             // 00
             0x00 => { println!("NOP"); 1 },
@@ -893,7 +890,7 @@ impl CPU {
             0xd0 => { self.rnc() }, // if !C RET
             0xd1 => { self.pop(DE) }, // POP D
             0xd2 => { self.jnc() }, // JNC addr
-            0xd3 => {1}, // OUT (??)
+            0xd3 => { self.reg[A] = machine.input(self.read_byte_immediate()); 2 }, // OUT (??)
             0xd4 => { self.cnc() }, // if !C CALL addr
             0xd5 => { self.push(DE) }, // PUSH D
             0xd6 => { self.sui() }, // subtract immediate byte from acc & set all flags
@@ -903,7 +900,7 @@ impl CPU {
             0xd8 => { self.rc() }, // if C RET
             0xd9 => {1}, // NOP
             0xda => { self.jc() }, // if C jmp addr
-            0xdb => {0}, // IN (??)
+            0xdb => { machine.output(self.read_byte_immediate(), self.reg[A]); 2 }, // IN (??)
             0xdc => { self.cc() }, // if C CALL addr
             0xdd => {1}, // NOP
             0xde => { self.sbi() }, // sutract immediate byte & carry from acc & set all flags
@@ -933,7 +930,7 @@ impl CPU {
             0xf0 => { self.rp() }, // if P RET
             0xf1 => { self.pop(PSW) }, // POP psw
             0xf2 => { self.jp() }, // if P jmp addr
-            0xf3 => {0}, // DI (??)
+            0xf3 => { 1 }, // DI (??)
             0xf4 => { self.cp() }, // if P call addr
             0xf5 => { self.push(PSW) }, // PUSH PSW
             0xf6 => { self.ori() }, // bitwise OR immediate byte with acc and set flags
@@ -941,9 +938,9 @@ impl CPU {
 
             // f8
             0xf8 => { self.rm() }, // if M, RET
-            0xf9 => {0}, // SPHL
+            0xf9 => { self.sphl() }, // SPHL
             0xfa => { self.jm() }, // if M jmp addr
-            0xfb => {0}, // EI (??)
+            0xfb => { println!("EI"); 1 }, // EI (??)
             0xfc => { self.cm() }, // if M call addr
             0xfd => {1}, // NOP
             0xfe => { self.cpi() }, // compare acc to immediate byte & set flags
@@ -994,6 +991,7 @@ mod tests {
     #[test]
     fn test_add() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0x80;
         cpu.memory[1] = 0x81;
@@ -1006,7 +1004,7 @@ mod tests {
 
         cpu.reg[A] = 0b1;
         cpu.reg[B] = 0b1;
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[A], 0b10);
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Sign), false);
@@ -1015,7 +1013,7 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(AuxCarry), false);
 
         cpu.reg[C] = 0x1;
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[A], 0b11);
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Sign), false);
@@ -1024,7 +1022,7 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(AuxCarry), false);
 
         cpu.reg[D] = 0x1;
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[A], 0b100);
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Sign), false);
@@ -1033,7 +1031,7 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(AuxCarry), false);
 
         cpu.reg[E] = 0x1;
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[A], 0b101);
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Sign), false);
@@ -1042,7 +1040,7 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(AuxCarry), false);
 
         cpu.reg[H] = 0x1;
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[A], 0b110);
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Sign), false);
@@ -1051,7 +1049,7 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(AuxCarry), false);
 
         cpu.reg[L] = 0x1;
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[A], 0b111);
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Sign), false);
@@ -1059,7 +1057,7 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(Carry), false);
         assert_eq!(cpu.reg.get_flag(AuxCarry), false);
 
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[A], 0b1110);
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Sign), false);
@@ -1071,7 +1069,7 @@ mod tests {
         cpu.memory[0x1001] = 0xFF;
         cpu.reg[HL] = 0x1001;
 
-        cpu.tick();
+        cpu.tick(&mut machine);
 
         assert_eq!(cpu.reg[A], 0xFF);
 
@@ -1085,13 +1083,14 @@ mod tests {
     #[test]
     fn test_pc_increment() { 
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.reg[A] = 0x1;
         cpu.reg[B] = 0x1;
 
         cpu.memory[0] = 0x80;
 
-        cpu.tick();
+        cpu.tick(&mut machine);
 
         assert_eq!(cpu.reg.pc, 0x1);
     }
@@ -1099,6 +1098,7 @@ mod tests {
     #[test]
     fn test_lxi() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0x1;
         cpu.memory[1] = 0x35;
@@ -1116,28 +1116,29 @@ mod tests {
         cpu.memory[10] = 0x35;
         cpu.memory[11] = 0x76;
 
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[BC], 0x7635);
 
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[DE], 0x7635);
 
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg[HL], 0x7635);
 
-        cpu.tick();
+        cpu.tick(&mut machine);
         assert_eq!(cpu.reg.sp, 0x7635);
     }
 
     #[test]
     fn test_stax() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[cpu.reg.pc] = 0x2;
         cpu.reg[A] = 0x42;
         cpu.reg[BC] = 0xF00F;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.memory[0xF00F], 0x42);
 
@@ -1145,7 +1146,7 @@ mod tests {
         cpu.reg[A] = 0x82;
         cpu.reg[DE] = 0xEA3;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.memory[0xEA3], 0x82);
     }
@@ -1153,6 +1154,7 @@ mod tests {
     #[test]
     fn test_inx() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0x3;
         cpu.memory[1] = 0x13;
@@ -1162,9 +1164,9 @@ mod tests {
         cpu.reg[DE] = 0;
         cpu.reg[HL] = 0;
 
-        cpu.tick();
-        cpu.tick();
-        cpu.tick();
+        cpu.tick(&mut machine);;
+        cpu.tick(&mut machine);;
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[BC], 0x1);
         assert_eq!(cpu.reg[DE], 0x1);
@@ -1174,6 +1176,7 @@ mod tests {
     #[test]
     fn test_inr() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0x4;
         cpu.memory[1] = 0xC;
@@ -1185,7 +1188,7 @@ mod tests {
         cpu.memory[7] = 0x34; // we execute M last because it changes the l register
         
         for x in 0..7 {
-            cpu.tick();
+            cpu.tick(&mut machine);;
         }
 
         assert_eq!(cpu.reg[A], 1);
@@ -1197,13 +1200,14 @@ mod tests {
         assert_eq!(cpu.reg[L], 1);
 
         cpu.reg[HL] = 8;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.memory[8], 1);
     }
 
     #[test]
     fn test_dcr() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.reg[A] = 2;
         cpu.reg[B] = 2;
@@ -1223,7 +1227,7 @@ mod tests {
         cpu.memory[7] = 0x35; // we execute M last because it changes the l register
         
         for x in 0..7 {
-            cpu.tick();
+            cpu.tick(&mut machine);;
         }
 
         assert_eq!(cpu.reg[A], 1);
@@ -1236,13 +1240,14 @@ mod tests {
 
         cpu.memory[8] = 2;
         cpu.reg[HL] = 8;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.memory[8], 1);
     }
 
     #[test]
     fn test_mvi() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x06;
         cpu.memory[1] = 0x10;
         cpu.memory[2] = 0x0E;
@@ -1261,7 +1266,7 @@ mod tests {
         cpu.memory[15] = 0x10;
 
         for x in 0..7 {
-            cpu.tick();
+            cpu.tick(&mut machine);;
         }
 
         assert_eq!(cpu.reg[A], 0x10);
@@ -1273,13 +1278,14 @@ mod tests {
         assert_eq!(cpu.reg[L], 0x10);
 
         cpu.reg[HL] = 0xFF;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.memory[cpu.reg[HL]], 0x10);
     }
 
     #[test]
     fn test_dad() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x9;
         cpu.memory[1] = 0x19;
         cpu.memory[2] = 0x29;
@@ -1287,21 +1293,22 @@ mod tests {
         cpu.reg[DE] = 0x1;
         cpu.reg[HL] = 0x1;
 
-        cpu.tick();
-        cpu.tick();
-        cpu.tick();
+        cpu.tick(&mut machine);;
+        cpu.tick(&mut machine);;
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[HL], 0x6);
 
         cpu.memory[3] = 0x39;
         cpu.reg.sp = 1;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[HL], 0x7);
     }
 
     #[test]
     fn test_ldax() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x0A;
         cpu.memory[1] = 0x1A;
 
@@ -1311,15 +1318,16 @@ mod tests {
         cpu.reg[BC] = 0xF1;
         cpu.reg[DE] = 0xF2;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0x10);
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0x20);
     }
 
     #[test]
     fn test_dcx() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x0B;
         cpu.memory[1] = 0x1B;
         cpu.memory[2] = 0x2B;
@@ -1331,7 +1339,7 @@ mod tests {
         cpu.reg.sp = 1;
 
         for x in 0..4 {
-            cpu.tick();
+            cpu.tick(&mut machine);;
         }
 
         assert_eq!(cpu.reg[BC], 0);
@@ -1343,15 +1351,16 @@ mod tests {
     #[test]
     fn test_rlc() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x07;
         cpu.reg[A] = 0b10101010;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0b01010101);
         assert_eq!(cpu.reg.get_flag(Carry), true);
 
         cpu.reg.pc = 0;
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[A], 0b10101010);
         assert_eq!(cpu.reg.get_flag(Carry), false);
@@ -1360,15 +1369,16 @@ mod tests {
     #[test]
     fn test_rrc() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x0F;
         cpu.reg[A] = 0b10000001;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0b11000000);
         assert_eq!(cpu.reg.get_flag(Carry), true);
 
         cpu.reg.pc = 0;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         cpu.reg[A] = 0b01100000;
          assert_eq!(cpu.reg.get_flag(Carry), false);
     }
@@ -1376,15 +1386,16 @@ mod tests {
     #[test]
     fn test_ral() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x17;
         cpu.reg[A] = 0b10101010;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0b01010100);
         assert_eq!(cpu.reg.get_flag(Carry), true);
 
         cpu.reg.pc = 0;
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[A], 0b10101001);
         assert_eq!(cpu.reg.get_flag(Carry), false);
@@ -1393,15 +1404,16 @@ mod tests {
     #[test]
     fn test_rar() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x1F;
         cpu.reg[A] = 0b10000001;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0b01000000);
         assert_eq!(cpu.reg.get_flag(Carry), true);
 
         cpu.reg.pc = 0;
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[A], 0b10100000);
     }
@@ -1409,13 +1421,14 @@ mod tests {
     #[test]
     fn test_shld() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x22;
         cpu.memory[1] = 0xAA;
         cpu.memory[2] = 0xBB;
         cpu.reg[L] = 0xCC;
         cpu.reg[H] = 0xDD;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.memory[0xAA], 0xCC);
         assert_eq!(cpu.memory[0xBB], 0xDD);
@@ -1424,6 +1437,7 @@ mod tests {
     #[test]
     fn test_lhld() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x2a;
         cpu.memory[1] = 0xAA;
         cpu.memory[2] = 0xBB;
@@ -1432,7 +1446,7 @@ mod tests {
         cpu.reg[L] = 0xCC;
         cpu.reg[H] = 0xDD;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[L], 0xEE);
         assert_eq!(cpu.reg[H], 0xFF);
@@ -1441,64 +1455,71 @@ mod tests {
     #[test]
     fn test_cma() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x2f;
         cpu.reg[A] = 0b00000001;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0b11111110);
     }
 
     #[test]
     fn test_sta() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x32;
         cpu.memory[1] = 0xBB;
         cpu.memory[2] = 0xAA;
         cpu.reg[A] = 0xFF;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.memory[0xAABB], 0xFF);
     }
 
     #[test]
     fn test_inxsp() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x33;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg.sp, 1);
     }
 
     #[test]
     fn test_stc() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x37;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg.get_flag(Carry), true);
     }
 
     #[test]
     fn test_lda() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x3a;
         cpu.memory[1] = 0xFF;
         cpu.memory[2] = 0x00;
         cpu.memory[0x00FF] = 0xAA;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0xAA);
     }
 
     #[test]
     fn test_cmc() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x3F;
         cpu.memory[1] = 0x3F;
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg.get_flag(Carry), true);
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg.get_flag(Carry), false);
     }
 
     #[test]
     fn test_mov() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         let mut index = 0;
 
         for x in 0x40..0x80 {
@@ -1522,7 +1543,7 @@ mod tests {
                     // println!("SR pre-tick: {:?}", cpu.reg[source_register]);
                 }
 
-                cpu.tick();
+                cpu.tick(&mut machine);;
 
                 if source_register != M && dest_register != M {
                     if source_register == M {
@@ -1549,6 +1570,7 @@ mod tests {
     #[test]
     fn test_adc() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0x80;
         cpu.memory[1] = 0x88;
@@ -1563,10 +1585,10 @@ mod tests {
         cpu.reg[A] = 0b11111111;
         cpu.reg[B] = 0b00000001;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0b00000000);
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0b00000010);
 
         cpu.reg[C] = 1;
@@ -1577,12 +1599,12 @@ mod tests {
         cpu.memory[cpu.reg[HL]] = 1;
 
         for x in 0..6 {
-            cpu.tick();
+            cpu.tick(&mut machine);;
         }
 
         assert_eq!(cpu.reg[A], 0b1000);
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[A], 0b10000);
     }
@@ -1590,6 +1612,7 @@ mod tests {
     #[test]
     fn test_sub() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         let mut index = 0;
     
         for x in 0x90..0x98 {
@@ -1606,17 +1629,17 @@ mod tests {
         cpu.reg[L] = 0b0000001;
         cpu.memory[cpu.reg[HL]] = 0b0000001;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0b11111111);
         assert_eq!(cpu.reg.get_flag(Carry), true);
 
         for x in 0..6 {
-            cpu.tick();
+            cpu.tick(&mut machine);;
         }
         
         assert_eq!(cpu.reg[A], 0b11111111 - 6);
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[A], 0);
     }
@@ -1624,6 +1647,7 @@ mod tests {
     #[test]
     fn test_sbb() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         let mut index = 0;
     
         for x in 0x98..0xa0 {
@@ -1640,17 +1664,17 @@ mod tests {
         cpu.reg[L] = 0b0000001;
         cpu.memory[cpu.reg[HL]] = 0b0000001;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
         assert_eq!(cpu.reg[A], 0b11111111);
         assert_eq!(cpu.reg.get_flag(Carry), true);
 
         for x in 0..6 {
-            cpu.tick();
+            cpu.tick(&mut machine);;
         }
         
         assert_eq!(cpu.reg[A], 0b11111111 - 7);
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[A], 0);
     }
@@ -1671,6 +1695,7 @@ mod tests {
         ];
 
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
         let mut index = 0;
         
         for x in 0xa0..0xa8 {
@@ -1689,7 +1714,7 @@ mod tests {
                 cpu.memory[cpu.reg[HL]] = 0b10000000;
             }
             
-            cpu.tick();
+            cpu.tick(&mut machine);;
             println!("{:08b}", cpu.reg[A]);
 
             if x == 0xa6 {
@@ -1728,6 +1753,7 @@ mod tests {
         results.push(0b00000000);
 
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         let mut index = 0;
         for x in 0xa8..0xb0 {
@@ -1746,7 +1772,7 @@ mod tests {
                 cpu.memory[cpu.reg[HL]] = 0b01100000;
             }
 
-            cpu.tick();
+            cpu.tick(&mut machine);;
             
             assert_eq!(cpu.reg[A], results[index as usize]);
 
@@ -1780,6 +1806,7 @@ mod tests {
         results.push(0b11111111);
 
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         let mut index = 0;
         for x in 0xb0..0xb8 {
@@ -1798,7 +1825,7 @@ mod tests {
                 cpu.memory[cpu.reg[HL]] = 0b01100000;
             }
 
-            cpu.tick();
+            cpu.tick(&mut machine);;
             
             assert_eq!(cpu.reg[A], results[index as usize]);
 
@@ -1809,6 +1836,7 @@ mod tests {
     #[test]
     fn test_cmp() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0xb8;
         cpu.memory[1] = 0xb9;
@@ -1819,17 +1847,17 @@ mod tests {
         cpu.reg[C] = 0b00011111; // Carry set
         cpu.reg[D] = 0b00000001; // Both reset
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg.get_flag(Zero), true);
         assert_eq!(cpu.reg.get_flag(Carry), false);
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Carry), true);
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg.get_flag(Zero), false);
         assert_eq!(cpu.reg.get_flag(Carry), false);
@@ -1838,14 +1866,15 @@ mod tests {
     #[test]
     fn test_push_pop() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0xc5;
         cpu.memory[1] = 0xd1;
         cpu.reg[BC] = 0xABBA;
         cpu.reg[SP] = 0xDDDD;
 
-        cpu.tick();
-        cpu.tick();
+        cpu.tick(&mut machine);;
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[BC], cpu.reg[DE]);
     }
@@ -1853,12 +1882,13 @@ mod tests {
     #[test]
     fn test_jmp() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0xc3;
         cpu.memory[1] = 0xBB;
         cpu.memory[2] = 0xAA;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[PC], 0xAABB);
     }
@@ -1866,6 +1896,7 @@ mod tests {
     #[test]
     fn test_jnz() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0xc2;
         cpu.memory[1] = 0xBB;
@@ -1875,13 +1906,13 @@ mod tests {
         cpu.memory[5] = 0xAA;
         cpu.reg.set_flag(Zero, true);
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[PC], 3);
 
         cpu.reg.set_flag(Zero, false);
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[PC], 0xAABB);
     }
@@ -1891,6 +1922,7 @@ mod tests {
     #[test]
     fn test_call_ret() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.reg[SP] = 0x100;
 
@@ -1905,7 +1937,7 @@ mod tests {
         cpu.memory[3] = 0x81;
 
         for _ in 0..4 {
-            cpu.tick();
+            cpu.tick(&mut machine);;
         }
 
         assert_eq!(cpu.reg[PC], 0x4);
@@ -1915,6 +1947,7 @@ mod tests {
     #[test]
     fn test_xhtl() {
         let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0xe3;
 
@@ -1926,7 +1959,7 @@ mod tests {
         cpu.memory[cpu.reg[SP]] = 0xFF;
         cpu.memory[cpu.reg[SP] + 1] = 0xFF;
 
-        cpu.tick();
+        cpu.tick(&mut machine);;
 
         assert_eq!(cpu.reg[HL], 0xFFFF);
         assert_eq!(cpu.memory[cpu.reg[SP]], 0xA);

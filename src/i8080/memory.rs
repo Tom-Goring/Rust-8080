@@ -14,6 +14,10 @@ impl Memory {
             memory: [0; 0xFFFF],
         }
     }
+
+    pub fn view(&self, start: Address, end: Address) -> &[Byte] {
+        &self.memory[(start as usize)..=(end as usize)]
+    }
 }
 
 impl Index<Address> for Memory {
