@@ -41,7 +41,7 @@ impl CPU {
         self.memory[self.reg.pc]
     }
 
-    // TODO: Add load function
+    pub 
 }
 
 impl CPU { // Helper functions

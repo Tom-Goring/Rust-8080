@@ -21,6 +21,9 @@ addons:
       - gcc
       - binutils-dev
       - libiberty-dev
+      - libsdl2-2.0
+      - libsdl2-dev
+      - libsdl2-gfx-dev
 
 
 after_success: |
