@@ -18,6 +18,10 @@ impl Memory {
     pub fn view(&self, start: Address, end: Address) -> &[Byte] {
         &self.memory[(start as usize)..=(end as usize)]
     }
+
+    pub fn load(&mut self, address: usize, data: &[u8]) {
+        self.memory[address..(address + data.len())].copy_from_slice(data);
+    }
 }
 
 impl Index<Address> for Memory {

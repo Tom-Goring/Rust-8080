@@ -40,8 +40,6 @@ impl CPU {
     pub fn fetch(&self) -> Byte {
         self.memory[self.reg.pc]
     }
-
-    pub 
 }
 
 impl CPU { // Helper functions
