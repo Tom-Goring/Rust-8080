@@ -921,8 +921,8 @@ impl CPU {
             // d0
             0xd0 => { self.rnc() }, // if !C RET
             0xd1 => { self.pop(DE) }, // POP D
-            0xd2 => { self.jnc() }, // JNC addr
-            0xd3 => { self.reg[A] = machine.input(self.read_byte_immediate()); 2 }, // OUT (??)
+            0xd2 => { self.jnc() }, // JNC addr 
+            0xd3 => { machine.output(self.read_byte_immediate(), self.reg[A]); 2 }, // OUT (??)
             0xd4 => { self.cnc() }, // if !C CALL addr
             0xd5 => { self.push(DE) }, // PUSH D
             0xd6 => { self.sui() }, // subtract immediate byte from acc & set all flags
@@ -932,7 +932,7 @@ impl CPU {
             0xd8 => { self.rc() }, // if C RET
             0xd9 => {1}, // NOP
             0xda => { self.jc() }, // if C jmp addr
-            0xdb => { machine.output(self.read_byte_immediate(), self.reg[A]); 2 }, // IN (??)
+            0xdb => { self.reg[A] = machine.input(self.read_byte_immediate()); 2 }, // IN (??)
             0xdc => { self.cc() }, // if C CALL addr
             0xdd => {1}, // NOP
             0xde => { self.sbi() }, // sutract immediate byte & carry from acc & set all flags
