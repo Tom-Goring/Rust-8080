@@ -17,6 +17,8 @@ use machine::{Keys, SpaceInvadersMachine};
 use screen::Screen;
 use std::io::{stdin, stdout, Read, Write};
 
+static CYCLES_PER_FRAME: usize = 2_000_000 / 120;
+
 fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let mut event_pump = sdl_context.event_pump()?;
@@ -33,7 +35,11 @@ fn main() -> Result<(), String> {
     let mut interrupt = 1;
 
     'main: loop {
-        cpu.tick(&mut machine);
+        let mut instruction_count = 0;
+
+        while instruction_count < CYCLES_PER_FRAME {
+            instruction_count += cpu.tick(&mut machine) as usize;
+        }
 
         cpu.trigger_interrupt(interrupt);
         interrupt = if interrupt == 1 { 2 } else { 1 };
