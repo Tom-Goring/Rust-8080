@@ -57,7 +57,6 @@ impl CPU {
         let opcode = self.fetch();
         disassemble_8080_op(&self.memory, self.reg.pc);
         self.reg.pc += self.execute_opcode(opcode, machine);
-        println!("{}", CYCLES[opcode as usize]);
         CYCLES[opcode as usize]
     }
 
@@ -177,7 +176,9 @@ impl CPU { // ARITHMETIC GROUP
     }
 
     fn dad(&mut self, x: Reg16) -> Word {
-        self.reg[HL] = self.reg[HL].wrapping_add(self.reg[x]);
+        let (mut result, overflow) = self.reg[HL].overflowing_add(self.reg[x]);
+        if overflow {result += 1};
+        self.reg[HL] = result;
         1
     }
 
@@ -659,7 +660,7 @@ impl CPU {
     pub fn execute_opcode(&mut self, opcode: Byte, machine: &mut impl Machine) -> Word {
         match opcode {
             // 00
-            0x00 => { println!("NOP"); 1 },
+            0x00 => {  1 },
             0x01 => { self.lxi(BC)  },
             0x02 => { self.stax(BC) },
             0x03 => { self.inx(BC)  },
@@ -669,7 +670,7 @@ impl CPU {
             0x07 => { self.rlc()    },
 
             // 08
-            0x08 => { println!("NOP"); 1 },
+            0x08 => {  1 },
             0x09 => { self.dad(BC)  },
             0x0a => { self.ldax(BC) },
             0x0b => { self.dcx(BC)  },
@@ -679,7 +680,7 @@ impl CPU {
             0x0f => { self.rrc()    },
 
             // 10
-            0x10 => { println!("NOP"); 1 },
+            0x10 => {  1 },
             0x11 => { self.lxi(DE)  },
             0x12 => { self.stax(DE) },
             0x13 => { self.inx(DE)  },
@@ -689,7 +690,7 @@ impl CPU {
             0x17 => { self.ral()    },
 
             // 18
-            0x18 => { println!("NOP"); 1 },
+            0x18 => {  1 },
             0x19 => { self.dad(DE) },
             0x1a => { self.ldax(DE) },
             0x1b => { self.dcx(DE) },
@@ -699,7 +700,7 @@ impl CPU {
             0x1f => { self.rar() },
 
             // 20
-            0x20 => { println!("NOP"); 1 },
+            0x20 => {  1 },
             0x21 => { self.lxi(HL) },
             0x22 => { self.shld() },
             0x23 => { self.inx(HL) },
@@ -709,7 +710,7 @@ impl CPU {
             0x27 => {0}, // TODO: After BCD -> DAA
 
             // 28
-            0x28 => { println!("NOP"); 1 },
+            0x28 => {  1 },
             0x29 => { self.dad(HL) },
             0x2a => { self.lhld() },
             0x2b => { self.dcx(HL) },
@@ -719,7 +720,7 @@ impl CPU {
             0x2f => { self.cma() },
 
             // 30
-            0x30 => { println!("NOP"); 1 },
+            0x30 => {  1 },
             0x31 => { self.lxi(SP) },
             0x32 => { self.sta() },
             0x33 => { self.inx(SP) },
@@ -729,7 +730,7 @@ impl CPU {
             0x37 => { self.stc() },
 
             // 38
-            0x38 => { println!("NOP"); 1 },
+            0x38 => {  1 },
             0x39 => { self.dad(SP) },
             0x3a => { self.lda() },
             0x3b => { self.dcx(SP) },
@@ -902,7 +903,13 @@ impl CPU {
             0xc0 => { self.rnz() }, // If not 0 RET
             0xc1 => { self.pop(BC) }, // POP B
             0xc2 => { self.jnz() }, // JNZ addr
-            0xc3 => { self.jmp() }, // JMP addr
+            0xc3 => { 
+                if self.read_word_immediate() == 0 {
+                    println!("");
+                    ::std::process::exit(0);
+                }
+                self.jmp() 
+            }, // JMP addr
             0xc4 => { self.cnz() }, // if NZ CALL addr
             0xc5 => { self.push(BC) }, // PUSH B
             0xc6 => { self.adi() }, // ADI (add immediate to acc)
@@ -914,7 +921,28 @@ impl CPU {
             0xca => { self.jz() }, // JZ addr
             0xcb => {1}, // NOP
             0xcc => { self.cz() }, // if Z CALL addr
-            0xcd => { self.call() }, // CALL addr
+            0xcd => { // CALL addr
+                if self.read_word_immediate() == 5 {
+                    let c_value = self.reg[C];
+                    if c_value == 9 {
+                        let mut address = self.reg[DE] + 3;
+                        let mut bytes: Vec<char> = Vec::new();
+                        while (self.memory[address] as char) != '$' {
+                            bytes.push(self.memory[address] as char);
+                            address += 1;
+                        }
+                        for byte in bytes {
+                            print!("{}", byte);
+                        }
+                        println!("");
+                    }
+                    3
+                } 
+                else {
+                    self.call() 
+                }
+                
+            }, 
             0xce => { self.aci() }, // ACI (add immediate byte & carry to acc)
             0xcf => { self.rst(0x8) }, // CALL $8
 
@@ -2011,4 +2039,12 @@ mod tests {
     // TODO: Add test for SUI
 
     // TODO: Add test for PCHL, SPHL & XCHG
+}
+
+use std::io::{stdin, stdout, Read, Write};
+fn pause() {
+    let mut stdout = stdout();
+    stdout.write(b"Press Enter to continue...").unwrap();
+    stdout.flush().unwrap();
+    stdin().read(&mut [0]).unwrap();
 }
