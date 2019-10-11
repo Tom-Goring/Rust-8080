@@ -143,13 +143,13 @@ impl CPU { // ARITHMETIC GROUP
     }
 
     fn inr(&mut self, x: Reg8) -> Word {
-        self.reg[x] += 1;
+        self.reg[x] = self.reg[x].wrapping_add(1);
         self.set_zspac_flags_on_byte(self.reg[x]);
         1
     }
 
     fn inr_m(&mut self) -> Word {
-        self.memory[self.reg[HL]] += 1;
+        self.memory[self.reg[HL]] = self.memory[self.reg[HL]].wrapping_add(1);
         self.set_zspac_flags_on_byte(self.memory[self.reg[HL]]);
         1
     }
@@ -167,17 +167,17 @@ impl CPU { // ARITHMETIC GROUP
     }
 
     fn inx(&mut self, x: Reg16) -> Word {
-        self.reg[x] += 1;
+        self.reg[x] = self.reg[x].wrapping_add(1);
         1
     }
 
     fn dcx(&mut self, x: Reg16) -> Word {
-        self.reg[x] -= 1;
+        self.reg[x] = self.reg[x].wrapping_sub(1);
         1
     }
 
     fn dad(&mut self, x: Reg16) -> Word {
-        self.reg[HL] += self.reg[x];
+        self.reg[HL] = self.reg[HL].wrapping_add(self.reg[x]);
         1
     }
 

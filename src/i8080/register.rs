@@ -15,7 +15,7 @@ pub enum Reg8 {
     M,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Reg16 {
     BC,
     DE,
