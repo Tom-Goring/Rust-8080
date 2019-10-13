@@ -154,7 +154,6 @@ impl CPU { // ARITHMETIC GROUP
     }
 
     fn dcr(&mut self, x: Reg8) -> Word {
-        println!("reg[{:?}] = {:04X}", x, self.reg[x]);
         self.reg[x] = self.reg[x].wrapping_sub(1);
         self.set_zspac_flags_on_byte(self.reg[x]);
         1
@@ -216,7 +215,6 @@ impl CPU { // ARITHMETIC GROUP
 
 impl CPU { // LOGICAL GROUP
         fn ana(&mut self, byte: Byte) -> Word {
-        println!("ana - byte: {:04X}", byte);
         self.reg[A] &= byte;
         self.set_zspac_flags_on_byte(self.reg[A]);
         1
@@ -332,7 +330,6 @@ impl CPU { // DATA TRANSFER GROUP
     }
 
     fn lda(&mut self) -> Word {
-        println!("ImWord: {:04X}", self.read_word_immediate());
         self.reg[A] = self.memory[self.read_word_immediate()];
         3
     }
@@ -1783,7 +1780,6 @@ mod tests {
             }
             
             cpu.tick(&mut machine);;
-            println!("{:08b}", cpu.reg[A]);
 
             if x == 0xa6 {
                 assert_eq!(cpu.reg[A], 0b10000000);
