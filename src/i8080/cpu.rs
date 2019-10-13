@@ -176,8 +176,8 @@ impl CPU { // ARITHMETIC GROUP
     }
 
     fn dad(&mut self, x: Reg16) -> Word {
-        let (mut result, overflow) = self.reg[HL].overflowing_add(self.reg[x]);
-        if overflow {result += 1};
+        let (result, overflow) = self.reg[HL].overflowing_add(self.reg[x] + self.reg.get_flag(Carry) as Word);
+        self.reg.set_flag(Carry, overflow);
         self.reg[HL] = result;
         1
     }
