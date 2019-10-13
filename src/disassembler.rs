@@ -11,7 +11,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
 
     match op_code {
         // 00
-        0x00 => { println!("NOP"); num_bytes = 1 },
+        0x00 => {  num_bytes = 1 },
         0x01 => { println!("LXI B, ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x02 => { println!("STAX B"); num_bytes = 1 },
         0x03 => { println!("INX B"); num_bytes = 1 },
@@ -21,7 +21,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
         0x07 => { println!("RLC"); num_bytes = 1 },
 
         // 08
-        0x08 => { println!("NOP"); num_bytes = 1 },
+        0x08 => {  num_bytes = 1 },
         0x09 => { println!("DAD B"); num_bytes = 1 },
         0x0a => { println!("LDAX B"); num_bytes = 1 },
         0x0b => { println!("DCX B"); num_bytes = 1 },
@@ -31,7 +31,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
         0x0f => { println!("RRC"); num_bytes = 1 },
 
         // 10
-        0x10 => { println!("NOP"); num_bytes = 1 },
+        0x10 => {  num_bytes = 1 },
         0x11 => { println!("LXI D, ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x12 => { println!("STAX D"); num_bytes = 1 },
         0x13 => { println!("INX D"); num_bytes = 1 },
@@ -41,7 +41,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
         0x17 => { println!("RAL"); num_bytes = 1 },
 
         // 18
-        0x18 => { println!("NOP"); num_bytes = 1 },
+        0x18 => {  num_bytes = 1 },
         0x19 => { println!("DAD D"); num_bytes = 1 },
         0x1a => { println!("LDAX D"); num_bytes = 1 },
         0x1b => { println!("DCX D"); num_bytes = 1 },
@@ -51,7 +51,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
         0x1f => { println!("RAR"); num_bytes = 1 },
 
         // 20
-        0x20 => { println!("NOP"); num_bytes = 1 },
+        0x20 => {  num_bytes = 1 },
         0x21 => { println!("LXI H, ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x22 => { println!("SHLD ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x23 => { println!("INX H"); num_bytes = 1 },
@@ -61,7 +61,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
         0x27 => { println!("DDA"); num_bytes = 1 },
 
         // 28
-        0x28 => { println!("NOP"); num_bytes = 1 },
+        0x28 => {  num_bytes = 1 },
         0x29 => { println!("DAD H"); num_bytes = 1 },
         0x2a => { println!("LHLD ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x2b => { println!("DCX H"); num_bytes = 1 },
@@ -71,7 +71,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
         0x2f => { println!("CMA"); num_bytes = 1 },
 
         // 30
-        0x30 => { println!("NOP"); num_bytes = 1 },
+        0x30 => {  num_bytes = 1 },
         0x31 => { println!("LXI SP, ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x32 => { println!("STA ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x33 => { println!("INX SP"); num_bytes = 1 },
@@ -81,7 +81,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
         0x37 => { println!("STC"); num_bytes = 1 },
 
         // 38
-        0x38 => { println!("NOP"); num_bytes = 1 },
+        0x38 => {  num_bytes = 1 },
         0x39 => { println!("DAD SP"); num_bytes = 1 },
         0x3a => { println!("LDA ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3 },
         0x3b => { println!("DCX SP"); num_bytes = 1 },

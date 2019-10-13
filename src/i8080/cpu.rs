@@ -628,19 +628,19 @@ impl CPU { // STACK GROUP
         1
     }
 
-    fn xhtl(&mut self) -> Word {
+    fn xthl(&mut self) -> Word {
         let tmp_h = self.reg[H];
         let tmp_l = self.reg[L];
-        self.reg[H] = self.memory[self.reg[SP]];
-        self.reg[L] = self.memory[self.reg[SP] + 1];
-        self.memory[self.reg[SP]] = tmp_h;
-        self.memory[self.reg[SP] + 1] = tmp_l;
+        self.reg[L] = self.memory[self.reg[SP]];
+        self.reg[H] = self.memory[self.reg[SP] + 1];
+        self.memory[self.reg[SP]] = tmp_l;
+        self.memory[self.reg[SP] + 1] = tmp_h;
         1
     }
 
     fn pchl(&mut self) -> Word {
         self.reg[PC] = self.reg[HL];
-        1
+        0
     }
 
     fn xchg(&mut self) -> Word {
@@ -970,7 +970,7 @@ impl CPU {
             0xe0 => { self.rpo() }, // if PO RET
             0xe1 => { self.pop(HL) }, // POP H
             0xe2 => { self.jpo() }, // JPO addr
-            0xe3 => { self.xhtl() }, // XTHL
+            0xe3 => { self.xthl() }, // XTHLXTHL
             0xe4 => { self.cpo() }, // if PO call addr
             0xe5 => { self.push(HL) }, // PUSH H
             0xe6 => { self.ani() }, // bitwise AND acc with immediate byte & set flags
@@ -1007,6 +1007,14 @@ impl CPU {
             0xff => { self.rst(0x38) }, // CALL $38
         }
     }
+}
+
+use std::io::{stdin, stdout, Read, Write};
+fn pause() {
+    let mut stdout = stdout();
+    stdout.write(b"Press Enter to continue...").unwrap();
+    stdout.flush().unwrap();
+    stdin().read(&mut [0]).unwrap();
 }
 
 #[cfg(test)]
@@ -2005,25 +2013,64 @@ mod tests {
     }
 
     #[test]
-    fn test_xhtl() {
+    fn test_pchl() {
+        let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
+
+        cpu.memory[0] = 0xe9;
+        cpu.reg[HL] = 0xBB;
+
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg[PC], 0xBB);
+    }
+
+    #[test]
+    fn test_sphl() {
+        let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
+
+        cpu.memory[0] = 0xf9;
+        cpu.reg[HL] = 0xFF;
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg[SP], 0xFF);
+    }
+
+    #[test]
+    fn test_xchg() {
+        let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
+
+        cpu.memory[0] = 0xeb;
+        cpu.reg[DE] = 0xAA;
+        cpu.reg[HL] = 0xBB;
+
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg[DE], 0xBB);
+        assert_eq!(cpu.reg[HL], 0xAA);
+    }
+
+    #[test]
+    fn test_xthl() {
         let mut cpu = CPU::new();
         let mut machine = crate::machine::SpaceInvadersMachine::new();
 
         cpu.memory[0] = 0xe3;
-
         cpu.reg[SP] = 0x100;
+        cpu.memory[cpu.reg[SP]] = 0xAA;
+        cpu.memory[cpu.reg[SP] + 1] = 0xBB;
+        cpu.reg[H] = 0xEE;
+        cpu.reg[L] = 0xFF;
 
-        cpu.reg[H] = 0xA;
-        cpu.reg[L] = 0xB;
+        cpu.tick(&mut machine);
 
-        cpu.memory[cpu.reg[SP]] = 0xFF;
-        cpu.memory[cpu.reg[SP] + 1] = 0xFF;
+        assert_eq!(cpu.reg[L], 0xAA);
+        assert_eq!(cpu.reg[H], 0xBB);
 
-        cpu.tick(&mut machine);;
-
-        assert_eq!(cpu.reg[HL], 0xFFFF);
-        assert_eq!(cpu.memory[cpu.reg[SP]], 0xA);
-        assert_eq!(cpu.memory[cpu.reg[SP] + 1], 0xB);
+        assert_eq!(cpu.memory[cpu.reg[SP]], 0xFF);
+        assert_eq!(cpu.memory[cpu.reg[SP] + 1], 0xEE);
     }
 
     // TODO: Add test for RZ
@@ -2037,14 +2084,8 @@ mod tests {
     // TODO: Add test for ACI
 
     // TODO: Add test for SUI
-
-    // TODO: Add test for PCHL, SPHL & XCHG
 }
 
-use std::io::{stdin, stdout, Read, Write};
-fn pause() {
-    let mut stdout = stdout();
-    stdout.write(b"Press Enter to continue...").unwrap();
-    stdout.flush().unwrap();
-    stdin().read(&mut [0]).unwrap();
-}
+// Fix PCHL & XTHL + add tests for SPHL, XCHG, & XTHL
+// Remove NOP print from disassembler to make debugging easier
+// Move back to invaders as I don't know why cpudiag isn't working
