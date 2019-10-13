@@ -190,7 +190,7 @@ impl CPU { // ARITHMETIC GROUP
     }
 
     fn aci(&mut self) -> Word {
-        let (mut result, overflow) = self.reg[A].overflowing_add(self.read_byte_immediate() + self.reg.get_flag(Carry) as u8);
+        let (result, overflow) = self.reg[A].overflowing_add(self.read_byte_immediate() + self.reg.get_flag(Carry) as u8);
         self.set_flags_on_result(result, overflow);
         self.reg[A] = result;
         2
@@ -199,6 +199,7 @@ impl CPU { // ARITHMETIC GROUP
     fn sui(&mut self) -> Word {
         let (result, overflow) = self.reg[A].overflowing_sub(self.read_byte_immediate());
         self.set_flags_on_result(result, overflow);
+        self.reg[A] = result;
         2
     }
 
@@ -397,7 +398,7 @@ impl CPU { // BRANCH GROUP
     }
 
     fn cp(&mut self) -> Word {
-        if self.reg.get_flag(Sign) {
+        if !self.reg.get_flag(Sign) {
             self.call()
         }
         else {
@@ -406,7 +407,7 @@ impl CPU { // BRANCH GROUP
     }
 
     fn cm(&mut self) -> Word {
-        if !self.reg.get_flag(Sign) {
+        if self.reg.get_flag(Sign) {
             self.call()
         }
         else {
@@ -2122,6 +2123,30 @@ mod tests {
         cpu.tick(&mut machine);
 
         assert_eq!(cpu.reg[A], 0xB);
+    }
+
+    #[test]
+    fn test_sui() {
+        let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
+
+        cpu.reg[A] = 0xB;
+
+        cpu.memory[0] = 0xD6;
+        cpu.memory[1] = 0xC;
+
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg[A], 0xFF);
+        assert_eq!(cpu.reg.get_flag(Carry), true);
+
+        cpu.memory[2] = 0xD6;
+        cpu.memory[3] = 0xF;
+
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg[A], 0xF0); 
+        assert_eq!(cpu.reg.get_flag(Carry), false);
     }
 
     // TODO: Add test for RZ
