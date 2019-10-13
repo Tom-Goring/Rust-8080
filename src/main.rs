@@ -12,7 +12,6 @@ use std::fs::File;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-
 use machine::{Keys, SpaceInvadersMachine};
 use screen::Screen;
 use std::io::{stdin, stdout, Read, Write};
@@ -28,19 +27,21 @@ fn main() -> Result<(), String> {
     let mut machine = SpaceInvadersMachine::new();
     machine.press_key(Keys::Coin);
 
-    let rom = File::open("./ROMS/invaders").unwrap();
+    let rom = File::open("./ROMS/cpudiag.bin").unwrap();
     let rom_bytes: Vec<u8> = rom.bytes().map(|x| x.unwrap()).collect();
-    cpu.memory.load(0x0000, &rom_bytes);
+    cpu.memory.load(0x100, &rom_bytes);
+
+    cpu.reg.pc =  0x100;
     
     // cpu.memory[0] = 0xc3;
     // cpu.memory[1] = 0;
     // cpu.memory[2] = 0x01;
 
-    // cpu.memory[368] = 0x7;
+    cpu.memory[368] = 0x7;
 
-    // cpu.memory[0x59c] = 0xc3;
-    // cpu.memory[0x59d] = 0xc2;
-    // cpu.memory[0x59e] = 0x05;
+    cpu.memory[0x59c] = 0xc3;
+    cpu.memory[0x59d] = 0xc2;
+    cpu.memory[0x59e] = 0x05;
 
     let mut interrupt = 1;
 

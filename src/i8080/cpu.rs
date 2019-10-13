@@ -154,6 +154,7 @@ impl CPU { // ARITHMETIC GROUP
     }
 
     fn dcr(&mut self, x: Reg8) -> Word {
+        println!("reg[{:?}] = {:04X}", x, self.reg[x]);
         self.reg[x] = self.reg[x].wrapping_sub(1);
         self.set_zspac_flags_on_byte(self.reg[x]);
         1
@@ -190,11 +191,8 @@ impl CPU { // ARITHMETIC GROUP
     }
 
     fn aci(&mut self) -> Word {
-        let (mut result, overflow) = self.reg[A].overflowing_add(self.read_byte_immediate());
+        let (mut result, overflow) = self.reg[A].overflowing_add(self.read_byte_immediate() + self.reg.get_flag(Carry) as u8);
         self.set_flags_on_result(result, overflow);
-        if self.reg.get_flag(Carry) {
-            result += 1;
-        }
         self.reg[A] = result;
         2
     }
@@ -218,6 +216,7 @@ impl CPU { // ARITHMETIC GROUP
 
 impl CPU { // LOGICAL GROUP
         fn ana(&mut self, byte: Byte) -> Word {
+        println!("ana - byte: {:04X}", byte);
         self.reg[A] &= byte;
         self.set_zspac_flags_on_byte(self.reg[A]);
         1
@@ -333,6 +332,7 @@ impl CPU { // DATA TRANSFER GROUP
     }
 
     fn lda(&mut self) -> Word {
+        println!("ImWord: {:04X}", self.read_word_immediate());
         self.reg[A] = self.memory[self.read_word_immediate()];
         3
     }
@@ -555,7 +555,7 @@ impl CPU { // BRANCH GROUP
     }
 
     fn jp(&mut self) -> Word {
-        if self.reg.get_flag(Sign) {
+        if !self.reg.get_flag(Sign) {
             self.jmp()
         }
         else {
@@ -564,7 +564,7 @@ impl CPU { // BRANCH GROUP
     }
 
     fn jm(&mut self) -> Word {
-        if !self.reg.get_flag(Sign) {
+        if self.reg.get_flag(Sign) {
             self.jmp()
         }
         else {
@@ -922,7 +922,7 @@ impl CPU {
             0xcb => {1}, // NOP
             0xcc => { self.cz() }, // if Z CALL addr
             0xcd => { // CALL addr
-                if self.read_word_immediate() == 5 {
+                if self.read_word_immediate() == 0x0005 {
                     let c_value = self.reg[C];
                     if c_value == 9 {
                         let mut address = self.reg[DE] + 3;
@@ -970,7 +970,7 @@ impl CPU {
             0xe0 => { self.rpo() }, // if PO RET
             0xe1 => { self.pop(HL) }, // POP H
             0xe2 => { self.jpo() }, // JPO addr
-            0xe3 => { self.xthl() }, // XTHLXTHL
+            0xe3 => { self.xthl() }, // XTHL
             0xe4 => { self.cpo() }, // if PO call addr
             0xe5 => { self.push(HL) }, // PUSH H
             0xe6 => { self.ani() }, // bitwise AND acc with immediate byte & set flags
@@ -2073,6 +2073,61 @@ mod tests {
         assert_eq!(cpu.memory[cpu.reg[SP] + 1], 0xEE);
     }
 
+    #[test]
+    fn test_cpi() {
+        let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
+
+        cpu.memory[0] = 0xfe;
+        cpu.memory[1] = 0x1;
+        cpu.reg[A] = 0x1;
+
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg.get_flag(Carry), false);
+        assert_eq!(cpu.reg.get_flag(Zero), true);
+
+        cpu.memory[2] = 0xfe;
+        cpu.memory[3] = 0x2;
+        cpu.reg[A] = 0x1;
+
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg.get_flag(Carry), true);
+        assert_eq!(cpu.reg.get_flag(Zero), false);
+
+        cpu.memory[4] = 0xfe;
+        cpu.memory[5] = 0x1;
+        cpu.reg[A] = 0x2;
+
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg.get_flag(Carry), false);
+        assert_eq!(cpu.reg.get_flag(Zero), false);
+    }
+
+    #[test]
+    fn test_aci() {
+        let mut cpu = CPU::new();
+        let mut machine = crate::machine::SpaceInvadersMachine::new();
+
+        cpu.reg.set_flag(Carry, true);
+        cpu.reg[A] = 0xF5;
+
+        cpu.memory[0] = 0xCE;
+        cpu.memory[1] = 0xA;
+        cpu.memory[2] = 0xCE;
+        cpu.memory[3] = 0xA;
+
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg.get_flag(Carry), true);
+
+        cpu.tick(&mut machine);
+
+        assert_eq!(cpu.reg[A], 0xB);
+    }
+
     // TODO: Add test for RZ
 
     // TODO: Add test for ADI
@@ -2085,7 +2140,3 @@ mod tests {
 
     // TODO: Add test for SUI
 }
-
-// Fix PCHL & XTHL + add tests for SPHL, XCHG, & XTHL
-// Remove NOP print from disassembler to make debugging easier
-// Move back to invaders as I don't know why cpudiag isn't working
