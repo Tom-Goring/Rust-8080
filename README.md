@@ -13,19 +13,11 @@ Clone the repository, and then from the repo directory run ```cargo run```
 To run the tests, run ```cargo test```
 
 ## TODO: 
-- Locate errors preventing cpudiag from working
-  - Possibly one of:
-    - POP (test exists)
-    - RET (test exists)
-    - LXI (test exists)
-    - MOV (tests exist)
-    - DAD (test exists)
-    - PUSH (test exists)
-    - XCHG (untested)
-    - MVI (test exists)
-    - CALL (test exists)
-    - CPUDIAG print itself (definitely prints something, but then corrupted)
-- Add tests for all remaining untested instructions & fix up old tests
+- Locate & fix errors preventing space invaders from working:
+    - PC: 0906 appears to be broken
+    - Documentation suggests this should be ADD vs DAD?
+    - This entire area is presumably corrupted for some reason, needs further investigation
+
 
 ## Current State: 
 - Space Invaders displays title & attempts to start game before getting stuck
