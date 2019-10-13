@@ -476,7 +476,7 @@ impl CPU { // BRANCH GROUP
     }
 
     fn rp(&mut self) -> Word {
-        if self.reg.get_flag(Sign) {
+        if !self.reg.get_flag(Sign) {
             self.ret()
         }
         else {
@@ -485,7 +485,7 @@ impl CPU { // BRANCH GROUP
     }
 
     fn rm(&mut self) -> Word {
-        if !self.reg.get_flag(Sign) {
+        if self.reg.get_flag(Sign) {
             self.ret()
         }
         else {
