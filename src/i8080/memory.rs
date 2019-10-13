@@ -27,6 +27,9 @@ impl Memory {
 impl Index<Address> for Memory {
     type Output = Byte;
     fn index(&self, index: Address) -> &Self::Output {
+        if index >= 0xFFFE {
+            panic!("wtf is going on");
+        }
         &self.memory[index as usize]
     }
 }

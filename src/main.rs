@@ -15,6 +15,7 @@ use sdl2::keyboard::Keycode;
 use machine::{Keys, SpaceInvadersMachine};
 use screen::Screen;
 use std::io::{stdin, stdout, Read, Write};
+use std::{thread, time};
 
 static CYCLES_PER_FRAME: usize = 2_000_000 / 120;
 
@@ -27,29 +28,23 @@ fn main() -> Result<(), String> {
     let mut machine = SpaceInvadersMachine::new();
     machine.press_key(Keys::Coin);
 
-    let rom = File::open("./ROMS/cpudiag.bin").unwrap();
+    let rom = File::open("./ROMS/invaders").unwrap();
     let rom_bytes: Vec<u8> = rom.bytes().map(|x| x.unwrap()).collect();
-    cpu.memory.load(0x100, &rom_bytes);
-
-    cpu.reg.pc =  0x100;
-    
-    // cpu.memory[0] = 0xc3;
-    // cpu.memory[1] = 0;
-    // cpu.memory[2] = 0x01;
-
-    cpu.memory[368] = 0x7;
-
-    cpu.memory[0x59c] = 0xc3;
-    cpu.memory[0x59d] = 0xc2;
-    cpu.memory[0x59e] = 0x05;
+    cpu.memory.load(0x000, &rom_bytes);
 
     let mut interrupt = 1;
+
+    const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
+    const HERTZ: u64 = 2_000_000; // 2 MHz
+    const NANOSECONDS_PER_HZ: u64 = NANOSECONDS_PER_SECOND / HERTZ;
+    const INTERRUPT_FREQ : u64 = 2_000 * 8;
 
     'main: loop {
         let mut instruction_count = 0;
 
         while instruction_count < CYCLES_PER_FRAME {
             instruction_count += cpu.tick(&mut machine) as usize;
+            thread::sleep(time::Duration::from_nanos(NANOSECONDS_PER_HZ));
         }
 
         cpu.trigger_interrupt(interrupt);
@@ -80,7 +75,7 @@ fn main() -> Result<(), String> {
                     ..
                 } => match keycode {
                     Keycode::Escape => return Ok(()),
-                    Keycode::A => machine.press_key(Keys::Left2),
+                    Keycode::A => {println!("A pressed"); machine.press_key(Keys::Left2)},
                     Keycode::D => machine.press_key(Keys::Right2),
                     Keycode::Left => machine.press_key(Keys::Left1),
                     Keycode::Right => machine.press_key(Keys::Right1),

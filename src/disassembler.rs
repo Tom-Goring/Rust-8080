@@ -7,7 +7,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
     let op_code: Byte = program[pc];
     let num_bytes;
 
-    print!("{:04X}  ", pc);
+    println!("{:04X}  ", pc);
 
     match op_code {
         // 00
@@ -329,6 +329,7 @@ pub fn disassemble_8080_op(program: &Memory, pc: Address) -> Byte {
         0xfd => {println!("*CALL ${:02X}{:02X}", program[(pc + 2)], program[(pc + 1)]); num_bytes = 3; },
         0xff => {println!("RST 7"); num_bytes = 1; },
         0xfe => {println!("CPI #${:02X}", program[(pc + 1)]); num_bytes = 2; },
+        _ => {println!("NOP!"); num_bytes = 0;}
     }
 
     num_bytes

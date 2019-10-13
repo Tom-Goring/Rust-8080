@@ -41,6 +41,7 @@ pub struct CPU {
     pub memory: Memory,
     pub input_ports: [u8; 4],
     pub output_ports: [u8; 5],
+    pub interrupts_enabled: bool,
 }
 
 impl CPU {
@@ -50,6 +51,7 @@ impl CPU {
             memory: Memory::new(),
             input_ports: [0; 4],
             output_ports: [0; 5],
+            interrupts_enabled: false,
         }
     }
 
@@ -57,6 +59,7 @@ impl CPU {
         let opcode = self.fetch();
         disassemble_8080_op(&self.memory, self.reg.pc);
         self.reg.pc += self.execute_opcode(opcode, machine);
+        self.dump_state();
         CYCLES[opcode as usize]
     }
 
@@ -65,13 +68,24 @@ impl CPU {
     }
 
     pub fn trigger_interrupt(&mut self, interrupt_num: Word) {
-        self.reg[SP] -= 2;
+        if self.interrupts_enabled {
+            self.reg[SP] -= 2;
         self.write_word_to_memory(self.reg[SP], self.reg[PC]);
         self.reg[PC] = 8 * interrupt_num;
+        self.interrupts_enabled = false;
+        }
     }
 }
 
 impl CPU { // Helper functions
+    fn dump_state(&self) {
+        println!("---------------------------------------------------------------------------------------");
+        println!("Current state:");
+        println!("PC: {:04X}, SP: {:04X}", self.reg[PC], self.reg[SP]);
+        println!("Registers: A[{:04X}], B[{:04X}], C[{:04X}], D[{:04X}], E[{:04X}], H[{:04X}], L[{:04X}]", self.reg[A], self.reg[B], self.reg[C], self.reg[D], self.reg[E], self.reg[H], self.reg[L]);
+        println!("---------------------------------------------------------------------------------------");
+    }
+
     fn read_byte_at_address(&self, address: Address) -> Byte {
         self.memory[address]
     }
@@ -637,6 +651,7 @@ impl CPU { // STACK GROUP
     }
 
     fn pchl(&mut self) -> Word {
+        println!("HL: {:04X} PC: {:04X}", self.reg[HL], self.reg[PC]);
         self.reg[PC] = self.reg[HL];
         0
     }
@@ -650,6 +665,18 @@ impl CPU { // STACK GROUP
 
     fn sphl(&mut self) -> Word {
         self.reg[SP] = self.reg[HL];
+        1
+    }
+}
+
+impl CPU { // IO
+    fn ei(&mut self) -> Word {
+        self.interrupts_enabled = true;
+        1
+    }
+
+    fn di(&mut self) -> Word {
+        self.interrupts_enabled = false;
         1
     }
 }
@@ -988,7 +1015,7 @@ impl CPU {
             0xf0 => { self.rp() }, // if P RET
             0xf1 => { self.pop(PSW) }, // POP psw
             0xf2 => { self.jp() }, // if P jmp addr
-            0xf3 => { 1 }, // DI (??)
+            0xf3 => { self.di() }, // DI (??)
             0xf4 => { self.cp() }, // if P call addr
             0xf5 => { self.push(PSW) }, // PUSH PSW
             0xf6 => { self.ori() }, // bitwise OR immediate byte with acc and set flags
@@ -998,7 +1025,7 @@ impl CPU {
             0xf8 => { self.rm() }, // if M, RET
             0xf9 => { self.sphl() }, // SPHL
             0xfa => { self.jm() }, // if M jmp addr
-            0xfb => { println!("EI"); 1 }, // EI (??)
+            0xfb => { self.ei() }, // EI (??)
             0xfc => { self.cm() }, // if M call addr
             0xfd => {1}, // NOP
             0xfe => { self.cpi() }, // compare acc to immediate byte & set flags
@@ -2148,16 +2175,4 @@ mod tests {
         assert_eq!(cpu.reg[A], 0xF0); 
         assert_eq!(cpu.reg.get_flag(Carry), false);
     }
-
-    // TODO: Add test for RZ
-
-    // TODO: Add test for ADI
-
-    // TODO: Add tests for RST
-
-    // TODO: Add test for RNZ
-
-    // TODO: Add test for ACI
-
-    // TODO: Add test for SUI
 }
