@@ -76,6 +76,32 @@ impl Register {
             self[F] &= !(flag as Byte);
         }
     }
+
+    pub fn get_flags_as_u8(&self) -> u8 {
+        unsafe {
+            self.psw.bytes.0
+        }
+    }
+
+    pub fn get_flags_as_string(&self) -> String {
+        let mut flags = String::new();
+        if self.get_flag(Flag::Sign) {
+            flags += "S,"
+        }
+        if self.get_flag(Flag::Zero) {
+            flags += "Z,"
+        }
+        if self.get_flag(Flag::AuxCarry) {
+            flags += "A,"
+        }
+        if self.get_flag(Flag::Parity) {
+            flags += "P,"
+        }
+        if self.get_flag(Flag::Carry) {
+            flags += "C,"
+        }
+        flags
+    }
 }
 
 impl Index<Reg8> for Register {
