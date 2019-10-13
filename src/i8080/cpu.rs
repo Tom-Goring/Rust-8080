@@ -341,16 +341,16 @@ impl CPU { // DATA TRANSFER GROUP
     }
 
     fn shld(&mut self) -> Word {
-        let (address, address2) = self.read_bytes_immediate();
-        self.memory[address as Address] = self.reg[L];
-        self.memory[address2 as Address] = self.reg[H];
+        let address = self.read_word_immediate();
+        self.memory[address] = self.reg[L];
+        self.memory[address + 1] = self.reg[H];
         3
     }
 
     fn lhld(&mut self) -> Word {
-        let (address, address2) = self.read_bytes_immediate();
-        self.reg[L] = self.memory[address as Address];
-        self.reg[H] = self.memory[address2 as Address];
+        let address = self.read_word_immediate();
+        self.reg[L] = self.read_byte_at_address(address);
+        self.reg[H] = self.read_byte_at_address(address + 1);
         3
     }
 
@@ -1490,14 +1490,14 @@ mod tests {
         let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x22;
         cpu.memory[1] = 0xAA;
-        cpu.memory[2] = 0xBB;
+        cpu.memory[2] = 0xAA;
         cpu.reg[L] = 0xCC;
         cpu.reg[H] = 0xDD;
 
         cpu.tick(&mut machine);;
 
-        assert_eq!(cpu.memory[0xAA], 0xCC);
-        assert_eq!(cpu.memory[0xBB], 0xDD);
+        assert_eq!(cpu.memory[0xAAAA], 0xCC);
+        assert_eq!(cpu.memory[0xAAAB], 0xDD);
     }
 
     #[test]
@@ -1506,9 +1506,9 @@ mod tests {
         let mut machine = crate::machine::SpaceInvadersMachine::new();
         cpu.memory[0] = 0x2a;
         cpu.memory[1] = 0xAA;
-        cpu.memory[2] = 0xBB;
-        cpu.memory[0xAA] = 0xEE;
-        cpu.memory[0xBB] = 0xFF;
+        cpu.memory[2] = 0xAA;
+        cpu.memory[0xAAAA] = 0xEE;
+        cpu.memory[0xAAAB] = 0xFF;
         cpu.reg[L] = 0xCC;
         cpu.reg[H] = 0xDD;
 
