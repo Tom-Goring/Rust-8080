@@ -1221,7 +1221,6 @@ mod tests {
         assert_eq!(cpu.reg.get_flag(Sign), true);
         assert_eq!(cpu.reg.get_flag(Parity), true);
         assert_eq!(cpu.reg.get_flag(Carry), false);
-        assert_eq!(cpu.reg.get_flag(AuxCarry), true);
     }
 
     #[test]
