@@ -54,7 +54,7 @@ impl SpaceInvaders {
 
         self.frames += 1;
 
-        std::thread::sleep(std::time::Duration::from_millis(16));
+        std::thread::sleep(std::time::Duration::from_millis(10));
     }
 
     pub fn half_step(&mut self, top_half: bool) {
@@ -68,7 +68,7 @@ impl SpaceInvaders {
         }
 
         self.cpu.interrupt(if top_half { 1 } else { 2 });
-
+        self.handle_keys();
         self.draw_from_memory();
     }
 
@@ -88,6 +88,50 @@ impl SpaceInvaders {
             }
         }
         self.screen.canvas.present();
+    }
+
+    pub fn handle_keys(&mut self) {
+       for event in self.event_pump.poll_iter() {
+            match event {
+                Event::Quit {..} => return,
+                Event::KeyDown {
+                    keycode: Some(keycode),
+                    ..
+                } => match keycode {
+                    Keycode::Escape => return,
+                    Keycode::C => set_key(&mut self.io.port1, 0, true), // coin
+                    Keycode::Num2 => set_key(&mut self.io.port1, 1, true), // p2
+                    Keycode::Num1 => set_key(&mut self.io.port1, 2, true), // p1
+                    Keycode::Space => set_key(&mut self.io.port1, 4, true), // fire
+                    Keycode::A => set_key(&mut self.io.port1, 5, true), // left
+                    Keycode::D => set_key(&mut self.io.port1, 6, true), // right
+
+                    Keycode::Return => set_key(&mut self.io.port2, 4, true), // fire2
+                    Keycode::Left => set_key(&mut self.io.port2, 5, true),
+                    Keycode::Right => set_key(&mut self.io.port2, 6, true),
+                    _ => (),
+                },
+                Event::KeyUp {
+                    keycode: Some(keycode),
+                    ..
+                } => match keycode {
+                    Keycode::Escape => return,
+                    Keycode::C => set_key(&mut self.io.port1, 0, false), // coin
+                    Keycode::Num2 => set_key(&mut self.io.port1, 1, false), // p2
+                    Keycode::Num1 => set_key(&mut self.io.port1, 2, false), // p1
+                    Keycode::Space => set_key(&mut self.io.port1, 4, false), // fire
+                    Keycode::A => set_key(&mut self.io.port1, 5, false), // left
+                    Keycode::D => set_key(&mut self.io.port1, 6, false), // right
+
+                    Keycode::Return => set_key(&mut self.io.port2, 4, false), // fire2
+                    Keycode::Left => set_key(&mut self.io.port2, 5, false),
+                    Keycode::Right => set_key(&mut self.io.port2, 6, false),
+                    _ => (),
+                },
+
+                _ => {}
+            }
+        } 
     }
 }
 
@@ -111,17 +155,13 @@ impl SpaceInvadersIO {
             port2: 0b0000_0000,
         }
     }
+}
 
-    fn update_input(&mut self) {
-
-    }
-
-    fn set_key(port: &mut u8, bit: u8, on: bool) {
-        if on {
-            *port |= 1 << bit
-        } else {
-            *port &= !(1 << bit)
-        }
+pub fn set_key(port: &mut u8, bit: u8, on: bool) {
+    if on {
+        *port |= 1 << bit
+    } else {
+        *port &= !(1 << bit)
     }
 }
 

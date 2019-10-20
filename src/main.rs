@@ -9,9 +9,6 @@ mod i8080;
 use std::io::prelude::*;
 use std::fs::File;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-
 static CYCLES_PER_FRAME: usize = 2_000_000 / 120;
 
 fn main() {
